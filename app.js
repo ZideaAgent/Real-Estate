@@ -209,7 +209,7 @@ function renderProperties(list) {
     return;
   }
   emptyState?.classList.add('hidden');
-  const formUrl = 'https://docs.google.com/forms'; // Replace with your Google Form link
+  const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSeTyPgOb5xf4XVivwCpgfFzZVz6id6iTywlqH9Ekkm1WOVOfw/viewform?usp=dialog'; // Your Google Form link
   list.forEach(item => {
     const node = cardTpl.content.cloneNode(true);
     const img = node.querySelector('.cover');
