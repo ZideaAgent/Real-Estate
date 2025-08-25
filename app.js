@@ -98,11 +98,6 @@ const translations = {
     'properties.subtitle': 'Real-time listings from our database.',
     'properties.empty': 'No properties match your filters.',
     'properties.rent': 'Rent Now',
-    'properties.media': 'Property Media',
-    'properties.images': 'Images',
-    'properties.video': 'Video',
-    'properties.location': 'Location Details',
-    'properties.back': 'Back to List',
 
     'about.title': 'About Us',
     'about.body': 'We help students and professionals find high-quality rentals with transparent details and responsive support.',
@@ -153,11 +148,6 @@ const translations = {
     'properties.subtitle': 'قوائم مباشرة من قاعدة البيانات.',
     'properties.empty': 'لا توجد عقارات مطابقة للفلاتر.',
     'properties.rent': 'استأجر الآن',
-    'properties.media': 'وسائط العقار',
-    'properties.images': 'الصور',
-    'properties.video': 'الفيديو',
-    'properties.location': 'تفاصيل الموقع',
-    'properties.back': 'العودة للقائمة',
 
     'about.title': 'من نحن',
     'about.body': 'نساعد الطلاب والمهنيين في العثور على إيجارات عالية الجودة وشفافة.',
@@ -256,18 +246,6 @@ function renderProperties(list) {
       : `<span class="no">Rented</span>`;
 
     rentBtn.addEventListener('click', () => window.open(formUrl, '_blank'));
-    
-    // Make the entire card clickable to go to detail page
-    node.classList.add('clickable');
-    node.addEventListener('click', (e) => {
-      // Don't trigger if clicking on the rent button
-      if (e.target.closest('.rent-btn')) {
-        return;
-      }
-      // Navigate to property detail page
-      window.location.href = `./property-detail.html?id=${item.id}`;
-    });
-    
     grid.appendChild(node);
   });
 }
