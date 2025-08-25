@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>RentEase — Real Estate Rentals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="favicon.ico" />
+    <style>
+        /* Minimal safeguard in case CSS fails to load */
+        body{font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+    </style>
+    <!-- Basic SEO -->
+    <meta name="description" content="Find and rent apartments, rooms, and studios with smart filters.">
+</head>
+<body>
+    <div id="landing-overlay" class="overlay visible" aria-hidden="false">
+        <div class="overlay-card">
+            <h1 data-i18n="landing.title">Welcome to RentEase</h1>
+            <p data-i18n="landing.subtitle">Find your next home with beautiful listings and powerful filters.</p>
+            <ol class="overlay-instructions">
+                <li data-i18n="landing.step1">Use filters to narrow down properties.</li>
+                <li data-i18n="landing.step2">Toggle language and theme from the header.</li>
+                <li data-i18n="landing.step3">Click Rent Now to submit the Google Form.</li>
+            </ol>
+            <button id="enterBtn" class="btn primary" data-i18n="landing.ok" onclick="document.getElementById('landing-overlay').classList.remove('visible'); document.getElementById('landing-overlay').setAttribute('aria-hidden', 'true');">OK</button>
+        </div>
+    </div>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="#home">RentEase</a>
+            <nav class="nav" aria-label="Primary">
+                <a href="#home" data-i18n="nav.home">Home</a>
+                <a href="#properties" data-i18n="nav.properties">Properties</a>
+                <a href="#about" data-i18n="nav.about">About</a>
+                <a href="#contact" data-i18n="nav.contact">Contact</a>
+                <a class="admin-link" href="admin.html" data-i18n="nav.admin">Admin</a>
+            </nav>
+            <div class="header-controls">
+                <select id="langSelect" class="control" aria-label="Language">
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                </select>
+                <button id="themeToggle" class="control" aria-label="Theme">
+                    <span id="themeIcon">🌞</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="container hero-inner">
+            <h1 data-i18n="hero.headline">Beautiful homes, smarter renting.</h1>
+            <p class="muted" data-i18n="hero.tagline">Browse curated apartments, rooms, and studios near your campus.</p>
+            <a class="btn primary" href="#properties" data-i18n="hero.cta">Explore Properties</a>
+        </div>
+    </section>
+
+    <section class="filters" aria-labelledby="filtersTitle">
+        <div class="container">
+            <div class="filters-header">
+                <h2 id="filtersTitle" data-i18n="filters.title">Filters</h2>
+                <button id="filtersToggle" class="btn subtle" data-i18n="filters.toggle">Show/Hide</button>
+            </div>
+            <form id="filtersForm" class="filters-grid" autocomplete="off">
+                <label class="field">
+                    <span data-i18n="filters.gender">Gender</span>
+                    <select id="filterGender">
+                        <option value="" data-i18n="filters.any">Any</option>
+                        <option value="male" data-i18n="filters.male">Male</option>
+                        <option value="female" data-i18n="filters.female">Female</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.type">Type</span>
+                    <select id="filterType">
+                        <option value="" data-i18n="filters.any">Any</option>
+                        <option value="apartment" data-i18n="filters.apartment">Apartment</option>
+                        <option value="room" data-i18n="filters.room">Room</option>
+                        <option value="studio" data-i18n="filters.studio">Studio</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.price">Max Price</span>
+                    <input id="filterPrice" type="range" min="0" max="20000" value="10000" step="100" />
+                    <output id="priceOutput">10000</output>
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.university">University/Faculty</span>
+                    <input id="filterUniversity" type="text" placeholder="e.g. Cairo University" />
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.area">Area</span>
+                    <input id="filterArea" type="text" placeholder="الحى الاول" />
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.location">Location</span>
+                    <input id="filterLocation" type="text" placeholder="عمارة 26، الدور الاول، شقة 23" />
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.city">City</span>
+                    <input id="filterCity" type="text" placeholder="6 أكتوبر" />
+                </label>
+                <label class="field field--wide">
+                    <span data-i18n="filters.search">Search</span>
+                    <input id="searchText" type="text" placeholder="Search by title or description" />
+                </label>
+                <div class="filters-actions">
+                    <button type="button" id="applyFilters" class="btn primary" data-i18n="filters.apply">Apply</button>
+                    <button type="button" id="resetFilters" class="btn" data-i18n="filters.reset">Reset</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section id="properties" class="properties" aria-labelledby="propertiesTitle">
+        <div class="container">
+            <div class="section-head">
+                <h2 id="propertiesTitle" data-i18n="properties.title">Available Properties</h2>
+                <p class="muted" data-i18n="properties.subtitle">Real-time listings from our database.</p>
+            </div>
+            <div id="propertiesGrid" class="grid"></div>
+            <div id="emptyState" class="empty hidden" data-i18n="properties.empty">No properties match your filters.</div>
+        </div>
+    </section>
+
+    <section id="about" class="about" aria-labelledby="aboutTitle">
+        <div class="container">
+            <h2 id="aboutTitle" data-i18n="about.title">About Us</h2>
+            <p data-i18n="about.body">We help students and professionals find high-quality rentals with transparent details and responsive support.</p>
+        </div>
+    </section>
+
+    <section id="contact" class="contact" aria-labelledby="contactTitle">
+        <div class="container">
+            <h2 id="contactTitle" data-i18n="contact.title">Contact</h2>
+            <p data-i18n="contact.body">Questions? Reach out via email or follow us on social media.</p>
+            <div class="socials">
+                <a target="_blank" rel="noopener" href="https://facebook.com" aria-label="Facebook">Fb</a>
+                <a target="_blank" rel="noopener" href="https://instagram.com" aria-label="Instagram">Ig</a>
+                <a target="_blank" rel="noopener" href="https://twitter.com" aria-label="Twitter">X</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <span>© <span id="year"></span> RentEase</span>
+            <span data-i18n="footer.rights">All rights reserved.</span>
+        </div>
+    </footer>
+
+    <template id="propertyCardTpl">
+        <article class="card fade-in">
+            <div class="media">
+                <img class="cover" alt="Property image" />
+                <video class="video" controls></video>
+                <span class="badge status"></span>
+            </div>
+            <div class="card-body">
+                <h3 class="title"></h3>
+                <p class="desc"></p>
+                <div class="meta">
+                    <span class="price"></span>
+                    <span class="type"></span>
+                    <span class="gender"></span>
+                </div>
+                <div class="location"></div>
+                <div class="students"></div>
+                <div class="availability"></div>
+                <button class="btn primary rent-btn" data-i18n="properties.rent">Rent Now</button>
+            </div>
+        </article>
+    </template>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Sample Data - RentEase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #6C5CE7;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #5b4be0;
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        button.danger:hover {
+            background: #dc2626;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Add Sample Data to RentEase</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> This will add 6 sample properties to your Firebase database. 
+            Make sure you have enabled Firestore Database in your Firebase Console.
+        </div>
+
+        <div>
+            <button onclick="addSampleData()">📝 Add Sample Data</button>
+            <button class="danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+        </div>
+
+        <div class="log" id="log">
+            <div>Ready to add sample data...</div>
+        </div>
+    </div>
+
+    <script src="add-sample-data.js"></script>
+    <script>
+        // Override console.log to show in the log div
+        const logDiv = document.getElementById('log');
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+            logDiv.innerHTML += `<div style="color: #28a745;">✅ ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const message = args.join(' ');
+            logDiv.innerHTML += `<div style="color: #dc3545;">❌ ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+
+        // Override the functions to show progress
+        window.addSampleData = async function() {
+            logDiv.innerHTML = '<div>Starting to add sample data...</div>';
+            await addSampleData();
+        };
+
+        window.clearAllData = async function() {
+            if (confirm('Are you sure you want to delete ALL properties from the database?')) {
+                logDiv.innerHTML = '<div>Clearing all data...</div>';
+                await clearAllData();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>RentEase Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./">RentEase</a>
+      <nav class="nav" aria-label="Admin">
+        <a href="#login">Login</a>
+        <a href="#dashboard">Dashboard</a>
+      </nav>
+      <div class="header-controls">
+        <button id="logoutBtn" class="btn subtle" style="display:none">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Auth Section -->
+  <section id="login" class="about">
+    <div class="container">
+      <h2>Admin Login</h2>
+      <form id="loginForm" class="filters-grid" style="grid-template-columns:1fr;max-width:480px">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" id="email" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="password" required />
+        </label>
+        <button class="btn primary" type="submit">Login</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="properties" style="display:none">
+    <div class="container">
+      <div class="section-head">
+        <h2>Dashboard</h2>
+        <p class="muted">Manage properties and media.</p>
+      </div>
+
+      <!-- Create / Update Form -->
+      <form id="propertyForm" class="filters-grid">
+        <input type="hidden" id="docId" />
+        <label class="field"><span>Title</span><input id="pTitle" required /></label>
+        <label class="field field--wide"><span>Description</span><input id="pDesc" required /></label>
+        <label class="field"><span>Type</span>
+          <select id="pType">
+            <option value="apartment">Apartment</option>
+            <option value="room">Room</option>
+            <option value="studio">Studio</option>
+          </select>
+        </label>
+        <label class="field"><span>Price</span><input id="pPrice" type="number" min="0" step="100" required /></label>
+        <label class="field"><span>Gender</span>
+          <select id="pGender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+        <label class="field"><span>University</span><input id="pUniversity" /></label>
+        <label class="field"><span>Area</span><input id="pArea" /></label>
+        <label class="field"><span>Location</span><input id="pLocation" /></label>
+        <label class="field"><span>City</span><input id="pCity" /></label>
+        <label class="field"><span>Availability</span>
+          <select id="pAvailability">
+            <option value="true">Available</option>
+            <option value="false">Rented</option>
+          </select>
+        </label>
+        <label class="field"><span>Rooms Left</span><input id="pRoomsLeft" type="number" min="0" step="1" /></label>
+
+        <!-- Media URLs -->
+        <label class="field field--wide"><span>Image URLs (one per line)</span><textarea id="pImages" placeholder="https://drive.google.com/file/d/...&#10;https://drive.google.com/file/d/...&#10;https://example.com/image.jpg" rows="3"></textarea></label>
+        <label class="field field--wide"><span>Video URL</span><input id="pVideo" type="url" placeholder="https://drive.google.com/file/d/..." /></label>
+
+        <div class="filters-actions">
+          <button type="submit" class="btn primary">Save</button>
+          <button type="button" id="resetForm" class="btn">Reset</button>
+        </div>
+      </form>
+
+      <!-- List -->
+      <div style="margin-top:24px">
+        <h3>Existing Properties</h3>
+        <div id="adminList" class="grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <template id="adminCardTpl">
+    <article class="card">
+      <div class="card-body">
+        <h3 class="title"></h3>
+        <div class="meta"></div>
+        <div class="actions" style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" data-action="edit">Edit</button>
+          <button class="btn" data-action="delete">Delete</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
+
+

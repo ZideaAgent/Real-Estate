@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Admin Debug</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .log { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; font-family: monospace; }
+    .error { color: red; }
+    .success { color: green; }
+    button { padding: 10px 20px; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Admin Debug Page</h1>
+  
+  <div>
+    <h3>Test Firebase Connection</h3>
+    <button onclick="testFirebase()">Test Firebase</button>
+    <button onclick="testAuth()">Test Auth</button>
+    <button onclick="testFirestore()">Test Firestore</button>
+  </div>
+
+  <div>
+    <h3>Test Admin Elements</h3>
+    <button onclick="checkElements()">Check DOM Elements</button>
+    <button onclick="testLogin()">Test Login Form</button>
+  </div>
+
+  <div class="log" id="log">
+    Ready to debug admin issues...
+  </div>
+
+  <script type="module">
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwdQ0ZAmifGSGnN-Vn3u8raYtpn5YPRhM",
+      authDomain: "real-state-f8cc3.firebaseapp.com",
+      projectId: "real-state-f8cc3",
+      storageBucket: "real-state-f8cc3.firebasestorage.app",
+      messagingSenderId: "3852629844",
+      appId: "1:3852629844:web:2a3a7cbe726bad814dbac1",
+      measurementId: "G-1G5YP5M0K6"
+    };
+
+    const logDiv = document.getElementById('log');
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+      logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // Test Firebase initialization
+    window.testFirebase = async function() {
+      try {
+        log('Testing Firebase initialization...');
+        
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js');
+        const app = initializeApp(firebaseConfig);
+        
+        log('✅ Firebase app initialized successfully', 'success');
+        return app;
+      } catch (error) {
+        log(`❌ Firebase initialization failed: ${error.message}`, 'error');
+        throw error;
+      }
+    };
+
+    // Test Authentication
+    window.testAuth = async function() {
+      try {
+        log('Testing Firebase Authentication...');
+        
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js');
+        const { getAuth } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js');
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        log('✅ Firebase Auth initialized successfully', 'success');
+        return auth;
+      } catch (error) {
+        log(`❌ Firebase Auth failed: ${error.message}`, 'error');
+        throw error;
+      }
+    };
+
+    // Test Firestore
+    window.testFirestore = async function() {
+      try {
+        log('Testing Firestore...');
+        
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js');
+        const { getFirestore, collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js');
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Try to read from properties collection
+        const snapshot = await getDocs(collection(db, 'properties'));
+        log(`✅ Firestore working! Found ${snapshot.size} properties`, 'success');
+        return db;
+      } catch (error) {
+        log(`❌ Firestore failed: ${error.message}`, 'error');
+        throw error;
+      }
+    };
+
+    // Check DOM elements
+    window.checkElements = function() {
+      log('Checking DOM elements...');
+      
+      // Check if we can access elements from admin.html
+      const elements = {
+        'loginForm': document.getElementById('loginForm'),
+        'email': document.getElementById('email'),
+        'password': document.getElementById('password'),
+        'propertyForm': document.getElementById('propertyForm'),
+        'pTitle': document.getElementById('pTitle'),
+        'adminList': document.getElementById('adminList')
+      };
+      
+      Object.entries(elements).forEach(([name, element]) => {
+        if (element) {
+          log(`✅ Found element: ${name}`, 'success');
+        } else {
+          log(`❌ Missing element: ${name}`, 'error');
+        }
+      });
+    };
+
+    // Test login functionality
+    window.testLogin = async function() {
+      try {
+        log('Testing login functionality...');
+        
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js');
+        const { getAuth, signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js');
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        // Test with sample credentials
+        const email = 'admin@rentease.com';
+        const password = 'admin123';
+        
+        log(`Attempting login with: ${email}`);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        log(`✅ Login successful! User ID: ${userCredential.user.uid}`, 'success');
+        return userCredential.user;
+      } catch (error) {
+        log(`❌ Login failed: ${error.message}`, 'error');
+        
+        if (error.message.includes('user-not-found')) {
+          log('🔧 User not found. Create admin user in Firebase Console > Authentication > Users', 'error');
+        } else if (error.message.includes('wrong-password')) {
+          log('🔧 Wrong password. Check your password.', 'error');
+        }
+        
+        throw error;
+      }
+    };
+
+    // Auto-run basic tests
+    window.addEventListener('load', () => {
+      log('Page loaded, running basic tests...');
+      setTimeout(() => {
+        checkElements();
+      }, 100);
+    });
+  </script>
+</body>
+</html>
