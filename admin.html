@@ -81,6 +81,50 @@
         <!-- Media URLs -->
         <label class="field field--wide"><span>Image URLs (one per line)</span><textarea id="pImages" placeholder="https://drive.google.com/file/d/...&#10;https://drive.google.com/file/d/...&#10;https://example.com/image.jpg" rows="3"></textarea></label>
         <label class="field field--wide"><span>Video URL</span><input id="pVideo" type="url" placeholder="https://drive.google.com/file/d/..." /></label>
+        
+        <!-- File Upload Section -->
+        <div class="field field--wide" style="border: 2px dashed var(--border); padding: 20px; border-radius: 12px; text-align: center;">
+          <h4 style="margin: 0 0 16px 0;">📸 Upload Photos to GitHub</h4>
+          <p style="margin: 0 0 16px 0; color: var(--muted);">Upload photos directly to GitHub repository</p>
+          
+          <!-- GitHub Settings -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <label class="field">
+              <span>GitHub Username</span>
+              <input id="githubUsername" type="text" placeholder="your-username" required />
+            </label>
+            <label class="field">
+              <span>Repository Name</span>
+              <input id="githubRepo" type="text" placeholder="your-repo" required />
+            </label>
+          </div>
+          
+          <label class="field">
+            <span>GitHub Personal Access Token</span>
+            <input id="githubToken" type="password" placeholder="ghp_xxxxxxxxxxxxx" required />
+          </label>
+          
+          <!-- File Upload -->
+          <div style="margin: 16px 0;">
+            <input type="file" id="photoUpload" multiple accept="image/*" style="display: none;" />
+            <button type="button" id="selectPhotosBtn" class="btn">Select Photos</button>
+            <span id="selectedFilesCount" style="margin-left: 8px; color: var(--muted);"></span>
+          </div>
+          
+          <!-- Upload Progress -->
+          <div id="uploadProgress" style="display: none;">
+            <div style="margin: 8px 0;">
+              <div style="background: var(--border); height: 4px; border-radius: 2px; overflow: hidden;">
+                <div id="progressBar" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+              </div>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                <span id="uploadStatus">Preparing...</span>
+              </div>
+            </div>
+          </div>
+          
+          <button type="button" id="uploadPhotosBtn" class="btn primary" style="display: none;">Upload to GitHub</button>
+        </div>
 
         <div class="filters-actions">
           <button type="submit" class="btn primary">Save</button>
