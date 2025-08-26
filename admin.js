@@ -92,7 +92,56 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadedUrls = [];
     displayUploadedImages();
     document.getElementById('pImages').value = '';
+    updateClearAllButton();
   });
+  
+  // Clear all images button
+  document.getElementById('clearAllImages')?.addEventListener('click', () => {
+    if (confirm('Remove all uploaded images?')) {
+      uploadedUrls = [];
+      pImages.value = '';
+      displayUploadedImages();
+      updateClearAllButton();
+    }
+  });
+  
+  // Test Cloudinary connection
+  document.getElementById('testCloudinary')?.addEventListener('click', async () => {
+    const testBtn = document.getElementById('testCloudinary');
+    const originalText = testBtn.textContent;
+    
+    try {
+      testBtn.textContent = 'Testing...';
+      testBtn.disabled = true;
+      
+      // Test with a simple fetch to Cloudinary
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
+        method: 'POST',
+        body: new FormData()
+      });
+      
+      if (response.status === 400) {
+        // 400 is expected for empty form data, but means the endpoint is reachable
+        alert('✅ Cloudinary connection successful! The endpoint is reachable.\n\nNote: You may need to create a custom upload preset in your Cloudinary dashboard for actual uploads to work.');
+      } else {
+        alert(`Cloudinary response: ${response.status} - ${response.statusText}`);
+      }
+      
+    } catch (error) {
+      console.error('Cloudinary test failed:', error);
+      alert(`❌ Cloudinary connection failed: ${error.message}\n\nPlease check your cloud name and internet connection.`);
+    } finally {
+      testBtn.textContent = originalText;
+      testBtn.disabled = false;
+    }
+  });
+  
+  function updateClearAllButton() {
+    const clearBtn = document.getElementById('clearAllImages');
+    if (clearBtn) {
+      clearBtn.style.display = uploadedUrls.length > 0 ? 'inline-block' : 'none';
+    }
+  }
   
   // Cloudinary upload functionality
   const imageUpload = document.getElementById('imageUpload');
@@ -108,12 +157,47 @@ document.addEventListener('DOMContentLoaded', function() {
   const cloudinaryConfig = {
     cloudName: 'dycisbm24',
     apiKey: '977787321868472',
-    uploadPreset: 'ml_default' // You may need to create a preset in your Cloudinary dashboard
+    uploadPreset: 'ml_default' // Using default preset for now
   };
   
-  // Check if upload preset is configured
-  if (cloudinaryConfig.uploadPreset === 'ml_default') {
-    console.warn('⚠️ Using default upload preset. For production, create a custom preset in your Cloudinary dashboard.');
+  // Alternative upload method using direct form submission
+  async function uploadToCloudinary(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+    
+    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+    
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      console.log('Cloudinary response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Cloudinary error response:', response.status, errorData);
+        throw new Error(`Upload failed: ${response.status} - ${errorData}`);
+      }
+      
+      const result = await response.json();
+      console.log('Upload successful:', result.secure_url);
+      return result.secure_url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  }
+  
+  // Fallback: If Cloudinary fails, we can store files as data URLs temporarily
+  function createDataURL(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
   }
   
   imageUpload?.addEventListener('change', async (e) => {
@@ -126,48 +210,49 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadStatus.textContent = `Uploading ${files.length} image(s)...`;
     
     try {
-      const uploadPromises = files.map(async (file, index) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', cloudinaryConfig.uploadPreset);
-        formData.append('cloud_name', cloudinaryConfig.cloudName);
+      // Upload files one by one to avoid overwhelming the API
+      const newUrls = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Upload failed for ${file.name}`);
+        try {
+          // Update progress
+          const progress = ((i + 1) / files.length) * 100;
+          progressFill.style.width = `${progress}%`;
+          uploadStatus.textContent = `Uploading ${file.name} (${i + 1} of ${files.length})`;
+          
+          const url = await uploadToCloudinary(file);
+          newUrls.push(url);
+          
+        } catch (fileError) {
+          console.error(`Failed to upload ${file.name}:`, fileError);
+          uploadStatus.textContent = `Failed to upload ${file.name}. Continuing with others...`;
+          // Continue with other files instead of stopping completely
         }
+      }
+      
+      if (newUrls.length > 0) {
+        // Add new URLs to existing ones
+        uploadedUrls = [...uploadedUrls, ...newUrls];
         
-        const result = await response.json();
+        // Update hidden field
+        pImages.value = uploadedUrls.join('\n');
         
-        // Update progress
-        const progress = ((index + 1) / files.length) * 100;
-        progressFill.style.width = `${progress}%`;
-        uploadStatus.textContent = `Uploaded ${index + 1} of ${files.length}`;
+        // Show uploaded images
+        displayUploadedImages();
         
-        return result.secure_url;
-      });
-      
-      const urls = await Promise.all(uploadPromises);
-      uploadedUrls = [...uploadedUrls, ...urls];
-      
-      // Update hidden field
-      pImages.value = uploadedUrls.join('\n');
-      
-      // Show uploaded images
-      displayUploadedImages();
-      
-      // Success state
-      progressFill.classList.add('success');
-      uploadStatus.textContent = `Successfully uploaded ${files.length} image(s)!`;
-      
-      setTimeout(() => {
-        uploadProgress.style.display = 'none';
-        progressFill.classList.remove('success');
-      }, 3000);
+        // Success state
+        progressFill.classList.add('success');
+        uploadStatus.textContent = `Successfully uploaded ${newUrls.length} of ${files.length} image(s)!`;
+        
+        setTimeout(() => {
+          uploadProgress.style.display = 'none';
+          progressFill.classList.remove('success');
+        }, 3000);
+      } else {
+        throw new Error('No images were uploaded successfully');
+      }
       
     } catch (error) {
       console.error('Upload failed:', error);
@@ -186,30 +271,82 @@ document.addEventListener('DOMContentLoaded', function() {
   
   function displayUploadedImages() {
     uploadedImages.innerHTML = '';
+    
+    if (uploadedUrls.length === 0) {
+      uploadedImages.innerHTML = '<p class="muted">No images uploaded yet</p>';
+      return;
+    }
+    
     uploadedUrls.forEach((url, index) => {
       const imgContainer = document.createElement('div');
       imgContainer.style.position = 'relative';
       imgContainer.style.display = 'inline-block';
+      imgContainer.style.margin = '4px';
       
       const img = document.createElement('img');
       img.src = url;
       img.alt = `Uploaded image ${index + 1}`;
+      img.style.cursor = 'pointer';
+      
+      // Add click to preview
+      img.onclick = () => previewImage(url);
       
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
       removeBtn.textContent = '×';
-      removeBtn.onclick = () => removeImage(index);
+      removeBtn.title = 'Remove image';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeImage(index);
+      };
       
       imgContainer.appendChild(img);
       imgContainer.appendChild(removeBtn);
       uploadedImages.appendChild(imgContainer);
     });
+    
+    // Update clear all button visibility
+    updateClearAllButton();
   }
   
   function removeImage(index) {
-    uploadedUrls.splice(index, 1);
-    pImages.value = uploadedUrls.join('\n');
-    displayUploadedImages();
+    if (confirm(`Remove image ${index + 1}?`)) {
+      uploadedUrls.splice(index, 1);
+      pImages.value = uploadedUrls.join('\n');
+      displayUploadedImages();
+    }
+  }
+  
+  function previewImage(url) {
+    // Create a simple preview modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      cursor: pointer;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = `
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      border-radius: 8px;
+    `;
+    
+    modal.appendChild(img);
+    modal.onclick = () => document.body.removeChild(modal);
+    
+    document.body.appendChild(modal);
   }
   
   // Load properties list
