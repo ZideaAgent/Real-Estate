@@ -91,20 +91,28 @@
                     <output id="priceOutput">10000</output>
                 </label>
                 <label class="field">
-                    <span data-i18n="filters.university">University/Faculty</span>
-                    <input id="filterUniversity" type="text" placeholder="e.g. Cairo University" />
+                    <span data-i18n="filters.university">University</span>
+                    <select id="filterUniversity">
+                        <option value="" data-i18n="filters.any">Any</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span data-i18n="filters.faculty">Faculty</span>
+                    <select id="filterFaculty">
+                        <option value="" data-i18n="filters.any">Any</option>
+                    </select>
                 </label>
                 <label class="field">
                     <span data-i18n="filters.area">Area</span>
-                    <input id="filterArea" type="text" placeholder="الحى الاول" />
-                </label>
-                <label class="field">
-                    <span data-i18n="filters.location">Location</span>
-                    <input id="filterLocation" type="text" placeholder="عمارة 26، الدور الاول، شقة 23" />
+                    <select id="filterArea">
+                        <option value="" data-i18n="filters.any">Any</option>
+                    </select>
                 </label>
                 <label class="field">
                     <span data-i18n="filters.city">City</span>
-                    <input id="filterCity" type="text" placeholder="6 أكتوبر" />
+                    <select id="filterCity">
+                        <option value="" data-i18n="filters.any">Any</option>
+                    </select>
                 </label>
                 <label class="field field--wide">
                     <span data-i18n="filters.search">Search</span>

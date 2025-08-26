@@ -86,7 +86,8 @@ const translations = {
     'filters.room': 'Room',
     'filters.studio': 'Studio',
     'filters.price': 'Max Price',
-    'filters.university': 'University/Faculty',
+    'filters.university': 'University',
+    'filters.faculty': 'Faculty',
     'filters.area': 'Area',
     'filters.location': 'Location',
     'filters.city': 'City',
@@ -136,7 +137,8 @@ const translations = {
     'filters.room': 'غرفة',
     'filters.studio': 'استوديو',
     'filters.price': 'أقصى سعر',
-    'filters.university': 'الجامعة/الكلية',
+    'filters.university': 'الجامعة',
+    'filters.faculty': 'الكلية',
     'filters.area': 'الحي',
     'filters.location': 'العنوان',
     'filters.city': 'المدينة',
@@ -236,7 +238,7 @@ function renderProperties(list) {
     type.textContent = item.type;
     gender.textContent = item.gender;
     location.textContent = `${item.area || ''} • ${item.location || ''} • ${item.city || ''}`;
-    students.textContent = item.university ? `Students: ${item.university}` : '';
+    students.textContent = item.university ? `Students: ${item.university}${item.faculty ? ` • ${item.faculty}` : ''}` : '';
     status.textContent = item.availability ? 'Available' : 'Rented';
     availability.innerHTML = item.availability
       ? `<span class="ok">Available${typeof item.roomsLeft === 'number' ? ` • Rooms left: ${item.roomsLeft}` : ''}</span>`
@@ -258,20 +260,20 @@ function applyFilters() {
   const gender = document.getElementById('filterGender').value;
   const type = document.getElementById('filterType').value;
   const maxPrice = Number(document.getElementById('filterPrice').value || 0);
-  const university = document.getElementById('filterUniversity').value.trim().toLowerCase();
-  const area = document.getElementById('filterArea').value.trim().toLowerCase();
-  const location = document.getElementById('filterLocation').value.trim().toLowerCase();
-  const city = document.getElementById('filterCity').value.trim().toLowerCase();
+  const university = document.getElementById('filterUniversity').value;
+  const faculty = document.getElementById('filterFaculty').value;
+  const area = document.getElementById('filterArea').value;
+  const city = document.getElementById('filterCity').value;
   const search = document.getElementById('searchText').value.trim().toLowerCase();
 
   const filtered = allProperties.filter(p => {
     if (gender && p.gender !== gender) return false;
     if (type && p.type !== type) return false;
     if (maxPrice && Number(p.price) > maxPrice) return false;
-    if (university && !(p.university || '').toLowerCase().includes(university)) return false;
-    if (area && !(p.area || '').toLowerCase().includes(area)) return false;
-    if (location && !(p.location || '').toLowerCase().includes(location)) return false;
-    if (city && !(p.city || '').toLowerCase().includes(city)) return false;
+    if (university && p.university !== university) return false;
+    if (faculty && p.faculty !== faculty) return false;
+    if (area && p.area !== area) return false;
+    if (city && p.city !== city) return false;
     if (search) {
       const blob = `${p.title} ${p.description}`.toLowerCase();
       if (!blob.includes(search)) return false;
@@ -337,6 +339,7 @@ async function loadProperties() {
     const rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     allProperties = rows;
     renderProperties(rows);
+    populateFilterDropdowns(rows);
   } catch (err) {
     console.error('Failed to load properties from Firestore.', err);
     // Fallback demo data to visualize the UI if Firestore isn't configured yet
@@ -348,6 +351,7 @@ async function loadProperties() {
         price: 8000,
         gender: 'male',
         university: 'Cairo University',
+        faculty: 'Engineering',
         area: 'الحى الاول',
         location: 'عمارة 12، الدور الثاني، شقة 5',
         city: '6 أكتوبر',
@@ -363,6 +367,7 @@ async function loadProperties() {
         price: 3000,
         gender: 'female',
         university: 'October University',
+        faculty: 'Business',
         area: 'الحى الثاني',
         location: 'عمارة 26، الدور الاول، شقة 23',
         city: '6 أكتوبر',
@@ -373,6 +378,64 @@ async function loadProperties() {
       }
     ];
     renderProperties(allProperties);
+    populateFilterDropdowns(allProperties);
+  }
+}
+
+// Populate filter dropdowns with unique values from properties
+function populateFilterDropdowns(properties) {
+  // Get unique values
+  const universities = [...new Set(properties.map(p => p.university).filter(Boolean))];
+  const faculties = [...new Set(properties.map(p => p.faculty).filter(Boolean))];
+  const areas = [...new Set(properties.map(p => p.area).filter(Boolean))];
+  const cities = [...new Set(properties.map(p => p.city).filter(Boolean))];
+
+  // Populate University dropdown
+  const universitySelect = document.getElementById('filterUniversity');
+  if (universitySelect) {
+    universitySelect.innerHTML = '<option value="" data-i18n="filters.any">Any</option>';
+    universities.forEach(uni => {
+      const option = document.createElement('option');
+      option.value = uni;
+      option.textContent = uni;
+      universitySelect.appendChild(option);
+    });
+  }
+
+  // Populate Faculty dropdown
+  const facultySelect = document.getElementById('filterFaculty');
+  if (facultySelect) {
+    facultySelect.innerHTML = '<option value="" data-i18n="filters.any">Any</option>';
+    faculties.forEach(faculty => {
+      const option = document.createElement('option');
+      option.value = faculty;
+      option.textContent = faculty;
+      facultySelect.appendChild(option);
+    });
+  }
+
+  // Populate Area dropdown
+  const areaSelect = document.getElementById('filterArea');
+  if (areaSelect) {
+    areaSelect.innerHTML = '<option value="" data-i18n="filters.any">Any</option>';
+    areas.forEach(area => {
+      const option = document.createElement('option');
+      option.value = area;
+      option.textContent = area;
+      areaSelect.appendChild(option);
+    });
+  }
+
+  // Populate City dropdown
+  const citySelect = document.getElementById('filterCity');
+  if (citySelect) {
+    citySelect.innerHTML = '<option value="" data-i18n="filters.any">Any</option>';
+    cities.forEach(city => {
+      const option = document.createElement('option');
+      option.value = city;
+      option.textContent = city;
+      citySelect.appendChild(option);
+    });
   }
 }
 
@@ -479,6 +542,7 @@ function renderDetailsHtml(data) {
       <div><strong>Price:</strong> ${Number(data.price || 0)} EGP</div>
       <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
       <div><strong>University:</strong> ${data.university || ''}</div>
+      <div><strong>Faculty:</strong> ${data.faculty || ''}</div>
       <div><strong>Area:</strong> ${data.area || ''}</div>
       <div><strong>Location:</strong> ${data.location || ''}</div>
     </div>

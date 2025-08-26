@@ -347,6 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
       price: Number(document.getElementById('pPrice').value || 0),
       gender: document.getElementById('pGender').value,
       university: document.getElementById('pUniversity').value,
+      faculty: document.getElementById('pFaculty').value,
       area: document.getElementById('pArea').value,
       location: document.getElementById('pLocation').value,
       city: document.getElementById('pCity').value,
@@ -393,6 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pPrice').value = data.price || 0;
     document.getElementById('pGender').value = data.gender || 'male';
     document.getElementById('pUniversity').value = data.university || '';
+    document.getElementById('pFaculty').value = data.faculty || '';
     document.getElementById('pArea').value = data.area || '';
     document.getElementById('pLocation').value = data.location || '';
     document.getElementById('pCity').value = data.city || '';
@@ -458,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div><strong>Price:</strong> ${Number(data.price || 0)} EGP</div>
         <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
         <div><strong>University:</strong> ${data.university || ''}</div>
+        <div><strong>Faculty:</strong> ${data.faculty || ''}</div>
         <div><strong>Area:</strong> ${data.area || ''}</div>
         <div><strong>Location:</strong> ${data.location || ''}</div>
       </div>
