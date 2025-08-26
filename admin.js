@@ -1,8 +1,7 @@
-// Admin.js - Simple working version with file uploads
+// Admin.js - Simple working version
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
 import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js';
 
 // Firebase config
 const firebaseConfig = {
@@ -19,26 +18,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
-
-// File upload helper functions
-async function uploadFileAndGetUrl(file, pathPrefix) {
-  const safeName = `${Date.now()}-${file.name}`.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const refPath = `${pathPrefix}/${safeName}`;
-  const ref = storageRef(storage, refPath);
-  await uploadBytes(ref, file);
-  return await getDownloadURL(ref);
-}
-
-async function uploadMultipleAndGetUrls(fileList, pathPrefix) {
-  const files = Array.from(fileList || []);
-  const urls = [];
-  for (const f of files) {
-    const url = await uploadFileAndGetUrl(f, pathPrefix);
-    urls.push(url);
-  }
-  return urls;
-}
 
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
@@ -155,18 +134,14 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     try {
-      // Handle image uploads
-      const imageFiles = document.getElementById('pImageFiles').files;
-      if (imageFiles && imageFiles.length > 0) {
-        const uploadedImages = await uploadMultipleAndGetUrls(imageFiles, 'properties/images');
-        payload.images = uploadedImages;
+      // Parse image URLs
+      const imageUrls = document.getElementById('pImages').value.split('\n').filter(url => url.trim());
+      if (imageUrls.length > 0) {
+        payload.images = imageUrls;
       }
       
-      // Handle video upload
-      const videoFile = document.getElementById('pVideoFile').files?.[0];
-      if (videoFile) {
-        const uploadedVideoUrl = await uploadFileAndGetUrl(videoFile, 'properties/videos');
-        payload.video = uploadedVideoUrl;
+      if (document.getElementById('pVideo').value.trim()) {
+        payload.video = document.getElementById('pVideo').value.trim();
       }
       
       const docId = document.getElementById('docId').value;
@@ -202,7 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pCity').value = data.city || '';
     document.getElementById('pAvailability').value = String(!!data.availability);
     document.getElementById('pRoomsLeft').value = data.roomsLeft || 0;
-    // Note: File inputs can't be pre-filled for security reasons
+    document.getElementById('pImages').value = (data.images || []).join('\n');
+    document.getElementById('pVideo').value = data.video || '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   

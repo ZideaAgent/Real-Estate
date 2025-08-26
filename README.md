@@ -65,46 +65,6 @@ service firebase.storage {
 }
 ```
 
-## Assets Management
-
-### Folder Structure
-```
-assets/
-├── images/          # Property images (JPG, PNG, WebP)
-├── videos/          # Property videos (MP4, WebM, OGG)
-└── README.md        # Asset guidelines
-```
-
-### Asset Paths
-When adding properties through the admin panel, use these path formats:
-
-**Images:**
-```
-assets/images/property-001-1.jpg
-assets/images/property-001-2.png
-```
-
-**Videos:**
-```
-assets/videos/property-001-video.mp4
-```
-
-### GitHub Integration
-All assets are stored in the GitHub repository at:
-https://github.com/ZideaAgent/Real-Estate
-
-The system automatically converts relative paths to full Vercel URLs:
-- `assets/images/photo.jpg` → `https://real-estate-bice-iota.vercel.app/assets/images/photo.jpg`
-- `assets/videos/tour.mp4` → `https://real-estate-bice-iota.vercel.app/assets/videos/tour.mp4`
-
-### Live Deployment
-Your assets are served directly from the live website at:
-https://real-estate-bice-iota.vercel.app
-
-### Naming Convention
-- Images: `property-[id]-[number].[ext]` (e.g., `property-001-1.jpg`)
-- Videos: `property-[id]-video.[ext]` (e.g., `property-001-video.mp4`)
-
 ## Admin Dashboard
 - Visit `/admin.html`.
 - Log in with the Email/Password admin account.
