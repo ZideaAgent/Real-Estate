@@ -33,9 +33,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('propertyForm');
   const adminList = document.getElementById('adminList');
   const adminCardTpl = document.getElementById('adminCardTpl');
+  const detailsOverlay = document.getElementById('detailsOverlay');
+  const detailsContent = document.getElementById('detailsContent');
+  const closeDetails = document.getElementById('closeDetails');
   
   // Check if elements exist
-  if (!loginForm || !emailEl || !passEl || !logoutBtn || !sectionLogin || !sectionDashboard || !form || !adminList || !adminCardTpl) {
+  if (!loginForm || !emailEl || !passEl || !logoutBtn || !sectionLogin || !sectionDashboard || !form || !adminList || !adminCardTpl || !detailsOverlay || !detailsContent || !closeDetails) {
     console.error('Some DOM elements are missing!');
     return;
   }
@@ -93,12 +96,19 @@ document.addEventListener('DOMContentLoaded', function() {
       snapshot.forEach(d => {
         const data = { id: d.id, ...d.data() };
         const node = adminCardTpl.content.cloneNode(true);
+        const card = node.querySelector('.card');
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', (evt) => {
+          const target = evt.target;
+          if (target.closest && target.closest('.actions')) return;
+          openDetails(data);
+        });
         node.querySelector('.title').textContent = data.title;
         node.querySelector('.meta').textContent = `${data.type} • ${data.price} EGP • ${data.city || ''}`;
         
         const actions = node.querySelector('.actions');
-        actions.querySelector('[data-action="edit"]').addEventListener('click', () => fillForm(data));
-        actions.querySelector('[data-action="delete"]').addEventListener('click', () => removeDoc(data.id));
+        actions.querySelector('[data-action="edit"]').addEventListener('click', (e) => { e.stopPropagation(); fillForm(data); });
+        actions.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); removeDoc(data.id); });
         adminList.appendChild(node);
       });
     } catch (err) {
@@ -183,6 +193,51 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Delete failed:', err);
       alert('Delete failed: ' + err.message);
     }
+  }
+  
+  // Details overlay handlers
+  function openDetails(data) {
+    detailsContent.innerHTML = renderDetailsHtml(data);
+    detailsOverlay.classList.add('visible');
+  }
+  function closeDetailsOverlay() {
+    detailsOverlay.classList.remove('visible');
+  }
+  closeDetails.addEventListener('click', closeDetailsOverlay);
+  detailsOverlay.addEventListener('click', (e) => {
+    if (e.target === detailsOverlay) closeDetailsOverlay();
+  });
+
+  function renderDetailsHtml(data) {
+    const images = Array.isArray(data.images) ? data.images : [];
+    const imageGallery = images.length ? `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+        ${images.map(url => `<img src="${url}" alt="image" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/>`).join('')}
+      </div>
+    ` : '<p class="muted">No images</p>';
+
+    const video = data.video ? `<video controls class="video" style="display:block;margin-top:10px"><source src="${data.video}"></video>` : '';
+
+    const availability = data.availability ? '<span class="ok">Available</span>' : '<span class="no">Rented</span>';
+
+    return `
+      <div class="meta">
+        <span>${data.type || ''}</span>
+        <span>${data.gender || ''}</span>
+        <span>${data.city || ''}</span>
+        <span class="availability">${availability}</span>
+      </div>
+      <p style="margin-top:8px">${data.description || ''}</p>
+      <div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        <div><strong>Price:</strong> ${Number(data.price || 0)} EGP</div>
+        <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
+        <div><strong>University:</strong> ${data.university || ''}</div>
+        <div><strong>Area:</strong> ${data.area || ''}</div>
+        <div><strong>Location:</strong> ${data.location || ''}</div>
+      </div>
+      ${imageGallery}
+      ${video}
+    `;
   }
   
   console.log('Admin setup complete!');
