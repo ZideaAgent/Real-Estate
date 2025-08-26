@@ -85,6 +85,133 @@ document.addEventListener('DOMContentLoaded', function() {
     await saveProperty();
   });
   
+  // Reset form button
+  document.getElementById('resetForm')?.addEventListener('click', () => {
+    form.reset();
+    document.getElementById('docId').value = '';
+    uploadedUrls = [];
+    displayUploadedImages();
+    document.getElementById('pImages').value = '';
+  });
+  
+  // Cloudinary upload functionality
+  const imageUpload = document.getElementById('imageUpload');
+  const uploadProgress = document.getElementById('uploadProgress');
+  const progressFill = document.querySelector('.progress-fill');
+  const uploadStatus = document.querySelector('.upload-status');
+  const uploadedImages = document.getElementById('uploadedImages');
+  const pImages = document.getElementById('pImages');
+  
+  let uploadedUrls = [];
+  
+  // Cloudinary configuration
+  const cloudinaryConfig = {
+    cloudName: 'dycisbm24',
+    apiKey: '977787321868472',
+    uploadPreset: 'ml_default' // You may need to create a preset in your Cloudinary dashboard
+  };
+  
+  // Check if upload preset is configured
+  if (cloudinaryConfig.uploadPreset === 'ml_default') {
+    console.warn('⚠️ Using default upload preset. For production, create a custom preset in your Cloudinary dashboard.');
+  }
+  
+  imageUpload?.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    // Show progress
+    uploadProgress.style.display = 'block';
+    progressFill.style.width = '0%';
+    uploadStatus.textContent = `Uploading ${files.length} image(s)...`;
+    
+    try {
+      const uploadPromises = files.map(async (file, index) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+        formData.append('cloud_name', cloudinaryConfig.cloudName);
+        
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Upload failed for ${file.name}`);
+        }
+        
+        const result = await response.json();
+        
+        // Update progress
+        const progress = ((index + 1) / files.length) * 100;
+        progressFill.style.width = `${progress}%`;
+        uploadStatus.textContent = `Uploaded ${index + 1} of ${files.length}`;
+        
+        return result.secure_url;
+      });
+      
+      const urls = await Promise.all(uploadPromises);
+      uploadedUrls = [...uploadedUrls, ...urls];
+      
+      // Update hidden field
+      pImages.value = uploadedUrls.join('\n');
+      
+      // Show uploaded images
+      displayUploadedImages();
+      
+      // Success state
+      progressFill.classList.add('success');
+      uploadStatus.textContent = `Successfully uploaded ${files.length} image(s)!`;
+      
+      setTimeout(() => {
+        uploadProgress.style.display = 'none';
+        progressFill.classList.remove('success');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      progressFill.classList.add('error');
+      uploadStatus.textContent = `Upload failed: ${error.message}`;
+      
+      setTimeout(() => {
+        uploadProgress.style.display = 'none';
+        progressFill.classList.remove('error');
+      }, 5000);
+    }
+    
+    // Clear file input
+    e.target.value = '';
+  });
+  
+  function displayUploadedImages() {
+    uploadedImages.innerHTML = '';
+    uploadedUrls.forEach((url, index) => {
+      const imgContainer = document.createElement('div');
+      imgContainer.style.position = 'relative';
+      imgContainer.style.display = 'inline-block';
+      
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Uploaded image ${index + 1}`;
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.textContent = '×';
+      removeBtn.onclick = () => removeImage(index);
+      
+      imgContainer.appendChild(img);
+      imgContainer.appendChild(removeBtn);
+      uploadedImages.appendChild(imgContainer);
+    });
+  }
+  
+  function removeImage(index) {
+    uploadedUrls.splice(index, 1);
+    pImages.value = uploadedUrls.join('\n');
+    displayUploadedImages();
+  }
+  
   // Load properties list
   async function loadList() {
     try {
@@ -177,7 +304,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pCity').value = data.city || '';
     document.getElementById('pAvailability').value = String(!!data.availability);
     document.getElementById('pRoomsLeft').value = data.roomsLeft || 0;
-    document.getElementById('pImages').value = (data.images || []).join('\n');
+    
+    // Handle images for editing
+    uploadedUrls = data.images || [];
+    document.getElementById('pImages').value = uploadedUrls.join('\n');
+    displayUploadedImages();
+    
     document.getElementById('pVideo').value = data.video || '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }

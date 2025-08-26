@@ -78,8 +78,24 @@
         </label>
         <label class="field"><span>Rooms Left</span><input id="pRoomsLeft" type="number" min="0" step="1" /></label>
 
-        <!-- Media URLs -->
-        <label class="field field--wide"><span>Image URLs (one per line)</span><textarea id="pImages" placeholder="https://drive.google.com/file/d/...&#10;https://drive.google.com/file/d/...&#10;https://example.com/image.jpg" rows="3"></textarea></label>
+        <!-- Image Upload Section -->
+        <div class="field field--wide">
+          <span>Upload Images</span>
+          <div class="upload-section">
+            <p>Select one or more images to upload to Cloudinary</p>
+            <input type="file" id="imageUpload" multiple accept="image/*" />
+            <div id="uploadProgress" class="progress-container" style="display:none">
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+              <div class="upload-status">Uploading...</div>
+            </div>
+            <div id="uploadedImages" class="uploaded-images"></div>
+          </div>
+        </div>
+        
+        <!-- Hidden field to store image URLs -->
+        <input type="hidden" id="pImages" />
         <label class="field field--wide"><span>Video URL</span><input id="pVideo" type="url" placeholder="https://drive.google.com/file/d/..." /></label>
 
         <div class="filters-actions">
