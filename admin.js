@@ -105,66 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Test Cloudinary connection
-  document.getElementById('testCloudinary')?.addEventListener('click', async () => {
-    const testBtn = document.getElementById('testCloudinary');
-    const originalText = testBtn.textContent;
-    
-    try {
-      testBtn.textContent = 'Testing...';
-      testBtn.disabled = true;
-      
-      // Test different presets
-      let workingPreset = null;
-      const results = [];
-      
-      for (const preset of possiblePresets) {
-        try {
-          const formData = new FormData();
-          formData.append('upload_preset', preset);
-          
-          const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
-            method: 'POST',
-            body: formData
-          });
-          
-          if (response.status === 400) {
-            const errorData = await response.text();
-            if (errorData.includes('Upload preset not found')) {
-              results.push(`❌ ${preset}: Not found`);
-            } else {
-              results.push(`✅ ${preset}: Available`);
-              workingPreset = preset;
-            }
-          } else {
-            results.push(`❓ ${preset}: Status ${response.status}`);
-          }
-        } catch (error) {
-          results.push(`❌ ${preset}: Error - ${error.message}`);
-        }
-      }
-      
-      // Show results
-      const message = workingPreset 
-        ? `✅ Found working preset: ${workingPreset}\n\nAll presets tested:\n${results.join('\n')}`
-        : `❌ No working presets found!\n\nAll presets tested:\n${results.join('\n')}\n\nPlease create a custom upload preset in your Cloudinary dashboard.`;
-      
-      alert(message);
-      
-      // Update the working preset if found
-      if (workingPreset) {
-        cloudinaryConfig.uploadPreset = workingPreset;
-        console.log('Updated working preset to:', workingPreset);
-      }
-      
-    } catch (error) {
-      console.error('Cloudinary test failed:', error);
-      alert(`❌ Cloudinary connection failed: ${error.message}\n\nPlease check your cloud name and internet connection.`);
-    } finally {
-      testBtn.textContent = originalText;
-      testBtn.disabled = false;
-    }
-  });
+
   
   function updateClearAllButton() {
     const clearBtn = document.getElementById('clearAllImages');
@@ -187,73 +128,35 @@ document.addEventListener('DOMContentLoaded', function() {
   const cloudinaryConfig = {
     cloudName: 'dycisbm24',
     apiKey: '977787321868472',
-    uploadPreset: 'ml_default' // This preset doesn't exist - we'll handle this
+    uploadPreset: 'rentease_properties' // Your working preset
   };
   
-  // Try different preset names that might exist
-  const possiblePresets = ['ml_default', 'rentease_properties', 'properties', 'default'];
-  
-  // Alternative upload method using direct form submission
+  // Upload method using your working preset
   async function uploadToCloudinary(file) {
-    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', cloudinaryConfig.uploadPreset);
     
-    // Try different presets until one works
-    for (const preset of possiblePresets) {
-      try {
-        console.log(`Trying preset: ${preset}`);
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', preset);
-        
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
-          method: 'POST',
-          body: formData
-        });
-        
-        console.log(`Preset ${preset} response status:`, response.status);
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log('Upload successful with preset:', preset, result.secure_url);
-          // Update the working preset for future uploads
-          cloudinaryConfig.uploadPreset = preset;
-          return result.secure_url;
-        } else {
-          const errorData = await response.text();
-          console.log(`Preset ${preset} failed:`, response.status, errorData);
-          
-          // If it's a preset not found error, try the next preset
-          if (errorData.includes('Upload preset not found')) {
-            continue;
-          }
-          
-          // For other errors, throw immediately
-          throw new Error(`Upload failed: ${response.status} - ${errorData}`);
-        }
-      } catch (error) {
-        console.error(`Error with preset ${preset}:`, error);
-        if (preset === possiblePresets[possiblePresets.length - 1]) {
-          // Last preset failed, throw the error
-          throw error;
-        }
-        // Try next preset
-        continue;
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Upload failed: ${response.status} - ${errorData}`);
       }
+      
+      const result = await response.json();
+      return result.secure_url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
     }
-    
-    // If we get here, all presets failed
-    throw new Error('All upload presets failed. Please create a custom preset in your Cloudinary dashboard.');
   }
   
-  // Fallback: If Cloudinary fails, we can store files as data URLs temporarily
-  function createDataURL(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    });
-  }
+
   
   imageUpload?.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
@@ -281,7 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
           newUrls.push(url);
           
         } catch (fileError) {
-          console.error(`Failed to upload ${file.name}:`, fileError);
           uploadStatus.textContent = `Failed to upload ${file.name}. Continuing with others...`;
           // Continue with other files instead of stopping completely
         }
