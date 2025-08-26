@@ -78,18 +78,14 @@
         </label>
         <label class="field"><span>Rooms Left</span><input id="pRoomsLeft" type="number" min="0" step="1" /></label>
 
-        <!-- Media URLs -->
-        <label class="field field--wide"><span>Image URLs (one per line)</span><textarea id="pImages" placeholder="assets/images/property-001-1.jpg&#10;https://..." rows="3"></textarea></label>
-        <label class="field field--wide"><span>Video URL</span><input id="pVideo" type="url" placeholder="assets/videos/property-001-video.mp4 or https://..." /></label>
-
-        <!-- Direct Uploads (optional) -->
+        <!-- Direct Uploads -->
         <div class="field field--wide" style="background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
-          <strong>Upload Media (stored in Firebase Storage)</strong>
+          <strong>Upload Media</strong>
           <div style="display:grid;gap:8px;margin-top:8px">
             <label class="field"><span>Upload Images</span><input id="pImageFiles" type="file" accept="image/*" multiple /></label>
             <label class="field"><span>Upload Video</span><input id="pVideoFile" type="file" accept="video/*" /></label>
           </div>
-          <p class="muted" style="margin-top:8px;font-size:13px">Uploads will generate public URLs and save them with the property.</p>
+          <p class="muted" style="margin-top:8px;font-size:13px">Files will be uploaded to Firebase Storage and URLs will be automatically generated.</p>
         </div>
 
         <!-- Asset Path Helper -->

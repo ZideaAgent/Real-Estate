@@ -1,4 +1,4 @@
-// Admin.js - Simple working version
+// Admin.js - Simple working version with file uploads
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
 import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
@@ -19,10 +19,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// After Firebase init
 const storage = getStorage(app);
 
+// File upload helper functions
 async function uploadFileAndGetUrl(file, pathPrefix) {
   const safeName = `${Date.now()}-${file.name}`.replace(/[^a-zA-Z0-9._-]/g, '_');
   const refPath = `${pathPrefix}/${safeName}`;
@@ -39,54 +38,6 @@ async function uploadMultipleAndGetUrls(fileList, pathPrefix) {
     urls.push(url);
   }
   return urls;
-}
-
-// Helper function to validate and format asset paths
-function formatAssetPath(path, type = 'image') {
-  if (!path) return null;
-  
-  // If it's already a full Vercel URL, return as is
-  if (path.includes('real-estate-bice-iota.vercel.app')) {
-    return path;
-  }
-  
-  // If it's a relative path starting with assets/, make it absolute to Vercel
-  if (path.startsWith('assets/')) {
-    return `https://real-estate-bice-iota.vercel.app/${path}`;
-  }
-  
-  // If it's a full URL (not Vercel), return as is
-  if (path.startsWith('http')) {
-    return path;
-  }
-  
-  // Default: assume it's a relative path and format it to Vercel
-  return `https://real-estate-bice-iota.vercel.app/assets/${type}s/${path}`;
-}
-
-// Validate asset paths
-function validateAssetPaths(images, video) {
-  const errors = [];
-  
-  // Validate images
-  if (images && images.length > 0) {
-    images.forEach((img, index) => {
-      if (img.trim()) {
-        if (!img.includes('assets/') && !img.includes('real-estate-bice-iota.vercel.app') && !img.includes('http')) {
-          errors.push(`Image ${index + 1}: Should start with 'assets/images/' or be a full URL`);
-        }
-      }
-    });
-  }
-  
-  // Validate video
-  if (video && video.trim()) {
-    if (!video.includes('assets/') && !video.includes('real-estate-bice-iota.vercel.app') && !video.includes('http')) {
-      errors.push('Video: Should start with "assets/videos/" or be a full URL');
-    }
-  }
-  
-  return errors;
 }
 
 // Wait for DOM to load
@@ -204,36 +155,20 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     try {
-      // Parse URLs from textareas/inputs
-      const imageUrls = document.getElementById('pImages').value.split('\n').filter(url => url.trim());
-      if (imageUrls.length > 0) {
-        payload.images = imageUrls.map(url => formatAssetPath(url.trim(), 'image'));
-      }
-      const videoUrl = document.getElementById('pVideo').value.trim();
-      if (videoUrl) {
-        payload.video = formatAssetPath(videoUrl, 'video');
-      }
-
-      // Handle uploads (if any)
+      // Handle image uploads
       const imageFiles = document.getElementById('pImageFiles').files;
-      if (imageFiles && imageFiles.length) {
-        const uploaded = await uploadMultipleAndGetUrls(imageFiles, 'properties/images');
-        payload.images = [...(payload.images || []), ...uploaded];
+      if (imageFiles && imageFiles.length > 0) {
+        const uploadedImages = await uploadMultipleAndGetUrls(imageFiles, 'properties/images');
+        payload.images = uploadedImages;
       }
+      
+      // Handle video upload
       const videoFile = document.getElementById('pVideoFile').files?.[0];
       if (videoFile) {
         const uploadedVideoUrl = await uploadFileAndGetUrl(videoFile, 'properties/videos');
         payload.video = uploadedVideoUrl;
       }
-
-      // Validate asset paths (allow Firebase Storage URLs)
-      const allowlist = ['real-estate-bice-iota.vercel.app', 'firebasestorage.googleapis.com', 'storage.googleapis.com'];
-      const isAllowed = (u) => allowlist.some(host => (u || '').includes(host)) || (u || '').startsWith('http') || (u || '').startsWith('assets/');
-      const validationErrors = [];
-      (payload.images || []).forEach((u, i) => { if (!isAllowed(u)) validationErrors.push(`Image ${i+1}: invalid URL`); });
-      if (payload.video && !isAllowed(payload.video)) validationErrors.push('Video: invalid URL');
-      if (validationErrors.length) { alert('Asset path validation errors:\n\n' + validationErrors.join('\n')); return; }
-
+      
       const docId = document.getElementById('docId').value;
       if (docId) {
         await updateDoc(doc(db, 'properties', docId), payload);
@@ -267,8 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pCity').value = data.city || '';
     document.getElementById('pAvailability').value = String(!!data.availability);
     document.getElementById('pRoomsLeft').value = data.roomsLeft || 0;
-    document.getElementById('pImages').value = (data.images || []).join('\n');
-    document.getElementById('pVideo').value = data.video || '';
+    // Note: File inputs can't be pre-filled for security reasons
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   
