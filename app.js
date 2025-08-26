@@ -437,6 +437,33 @@ detailsOverlay?.addEventListener('click', (e) => {
   if (e.target === detailsOverlay) closeDetailsOverlay();
 });
 
+// Helper function to convert Google Drive links to direct video URLs
+function convertGoogleDriveUrl(url) {
+  if (!url) return null;
+  
+  // Handle Google Drive sharing links
+  if (url.includes('drive.google.com')) {
+    // Extract file ID from various Google Drive URL formats
+    let fileId = '';
+    
+    if (url.includes('/file/d/')) {
+      // Format: https://drive.google.com/file/d/FILE_ID/view
+      fileId = url.split('/file/d/')[1]?.split('/')[0];
+    } else if (url.includes('id=')) {
+      // Format: https://drive.google.com/open?id=FILE_ID
+      fileId = url.split('id=')[1]?.split('&')[0];
+    }
+    
+    if (fileId) {
+      // Convert to direct video URL
+      return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    }
+  }
+  
+  // Return original URL if it's not Google Drive
+  return url;
+}
+
 function renderDetailsHtml(data) {
   const images = Array.isArray(data.images) ? data.images : [];
   const mainImageUrl = images[0] || 'https://picsum.photos/seed/home/800/600';
@@ -457,7 +484,26 @@ function renderDetailsHtml(data) {
     </div>
   ` : '<p class="muted">No images</p>';
 
-  const video = data.video ? `<video controls class="video" style="display:block;margin-top:12px;width:100%"><source src="${data.video}"></video>` : '';
+  let videoHtml = '';
+  if (data.video) {
+    const videoUrl = convertGoogleDriveUrl(data.video);
+    if (videoUrl) {
+      videoHtml = `
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+          <h4 style="margin:0 0 12px 0">Video</h4>
+          <video controls class="video" style="display:block;width:100%;max-height:400px;border-radius:8px;border:1px solid var(--border)">
+            <source src="${videoUrl}" type="video/mp4">
+            <source src="${videoUrl}" type="video/webm">
+            <source src="${videoUrl}" type="video/ogg">
+            Your browser does not support the video tag.
+          </video>
+          <p style="margin-top:8px;font-size:14px;color:var(--muted)">
+            <a href="${data.video}" target="_blank" rel="noopener">Open in Google Drive</a> if video doesn't play
+          </p>
+        </div>
+      `;
+    }
+  }
 
   const availability = data.availability ? '<span class="ok">Available</span>' : '<span class="no">Rented</span>';
 
@@ -477,7 +523,7 @@ function renderDetailsHtml(data) {
       <div><strong>Location:</strong> ${data.location || ''}</div>
     </div>
     ${imageGallery}
-    ${video}
+    ${videoHtml}
   `;
 }
 
