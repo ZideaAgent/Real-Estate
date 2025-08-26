@@ -214,7 +214,6 @@ function renderProperties(list) {
     const node = cardTpl.content.cloneNode(true);
     const card = node.querySelector('.card');
     const img = node.querySelector('.cover');
-    const vid = node.querySelector('.video');
     const status = node.querySelector('.status');
     const title = node.querySelector('.title');
     const desc = node.querySelector('.desc');
@@ -228,10 +227,7 @@ function renderProperties(list) {
 
     // Media
     img.src = (item.images && item.images[0]) || 'https://picsum.photos/seed/home/800/600';
-    if (item.video) {
-      vid.style.display = 'block';
-      vid.src = item.video;
-    }
+    // Cards show only the first image; video is shown in details view only
 
     // Primary fields
     title.textContent = item.title;
@@ -355,13 +351,8 @@ async function loadProperties() {
         area: 'الحى الاول',
         location: 'عمارة 12، الدور الثاني، شقة 5',
         city: '6 أكتوبر',
-        images: [
-          'https://picsum.photos/seed/apartment1/800/600',
-          'https://picsum.photos/seed/apartment2/800/600',
-          'https://picsum.photos/seed/apartment3/800/600',
-          'https://picsum.photos/seed/apartment4/800/600'
-        ],
-        video: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+        images: [],
+        video: '',
         availability: true,
         roomsLeft: 1
       },
@@ -375,11 +366,7 @@ async function loadProperties() {
         area: 'الحى الثاني',
         location: 'عمارة 26، الدور الاول، شقة 23',
         city: '6 أكتوبر',
-        images: [
-          'https://picsum.photos/seed/room1/800/600',
-          'https://picsum.photos/seed/room2/800/600',
-          'https://picsum.photos/seed/room3/800/600'
-        ],
+        images: [],
         video: '',
         availability: true,
         roomsLeft: 2
@@ -408,6 +395,39 @@ function openDetails(data) {
   const titleEl = document.getElementById('detailsTitle');
   if (titleEl) titleEl.textContent = data.title || '';
   detailsOverlay.classList.add('visible');
+
+  // Wire up gallery interactions (thumbnails + zoom)
+  try {
+    const images = Array.isArray(data.images) ? data.images.filter(Boolean) : [];
+    const mainImg = document.getElementById('detailsMainImage');
+    const thumbs = document.querySelectorAll('.thumbs img[data-index]');
+    let zoomScale = 1;
+
+    const applyZoom = () => {
+      if (!mainImg) return;
+      const clamped = Math.min(2, Math.max(1, zoomScale));
+      mainImg.style.transform = `scale(${clamped})`;
+    };
+
+    thumbs.forEach((t) => {
+      t.addEventListener('click', () => {
+        const idx = Number(t.getAttribute('data-index')) || 0;
+        if (images[idx] && mainImg) {
+          mainImg.src = images[idx];
+          document.querySelectorAll('.thumbs img').forEach(n => n.classList.remove('active'));
+          t.classList.add('active');
+          zoomScale = 1;
+          applyZoom();
+        }
+      });
+    });
+
+    document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale += 0.1; applyZoom(); });
+    document.getElementById('zoomOut')?.addEventListener('click', () => { zoomScale -= 0.1; applyZoom(); });
+    document.getElementById('zoomReset')?.addEventListener('click', () => { zoomScale = 1; applyZoom(); });
+  } catch (e) {
+    console.warn('Gallery wiring failed', e);
+  }
 }
 function closeDetailsOverlay() {
   detailsOverlay?.classList.remove('visible');
@@ -419,142 +439,46 @@ detailsOverlay?.addEventListener('click', (e) => {
 
 function renderDetailsHtml(data) {
   const images = Array.isArray(data.images) ? data.images : [];
-  const hasImages = images.length > 0;
-  const hasVideo = data.video;
-  
-  // Create image gallery with zoom functionality
-  let imageGallery = '';
-  if (hasImages) {
-    imageGallery = `
-      <div class="details-gallery">
-        <div class="details-main">
-          <img id="mainImage" src="${images[0]}" alt="Main property image" class="main-image" />
-          <div class="zoom-controls">
-            <button class="btn zoom-btn" onclick="zoomIn()">🔍+</button>
-            <button class="btn zoom-btn" onclick="zoomOut()">🔍-</button>
-            <button class="btn zoom-btn" onclick="resetZoom()">↺</button>
-          </div>
+  const mainImageUrl = images[0] || 'https://picsum.photos/seed/home/800/600';
+  const thumbs = images.map((url, idx) => `<img src="${url}" alt="thumb" data-index="${idx}" class="${idx===0?'active':''}"/>`).join('');
+  const imageGallery = images.length ? `
+    <div class="details-gallery">
+      <div class="details-main">
+        <img id="detailsMainImage" src="${mainImageUrl}" alt="image" />
+        <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px">
+          <button id="zoomOut" class="btn" aria-label="Zoom out">-</button>
+          <button id="zoomIn" class="btn" aria-label="Zoom in">+</button>
+          <button id="zoomReset" class="btn" aria-label="Reset zoom">⤾</button>
         </div>
-        ${images.length > 1 ? `
-          <div class="image-scroller">
-            <div class="thumbs-container">
-              ${images.map((url, index) => `
-                <img src="${url}" alt="Property image ${index + 1}" 
-                     class="thumb ${index === 0 ? 'active' : ''}" 
-                     onclick="changeMainImage('${url}', this)" />
-              `).join('')}
-            </div>
-            <button class="scroll-btn scroll-left" onclick="scrollThumbs('left')">‹</button>
-            <button class="scroll-btn scroll-right" onclick="scrollThumbs('right')">›</button>
-          </div>
-        ` : ''}
       </div>
-    `;
-  }
+      <div class="thumbs" style="overflow-x:auto;white-space:nowrap">
+        ${thumbs}
+      </div>
+    </div>
+  ` : '<p class="muted">No images</p>';
 
-  // Add video if available
-  let videoSection = '';
-  if (hasVideo) {
-    videoSection = `
-      <div class="video-section">
-        <h4>Property Video</h4>
-        <video controls class="property-video">
-          <source src="${data.video}" type="video/mp4">
-          Your browser does not support the video tag.
-        </video>
-      </div>
-    `;
-  }
+  const video = data.video ? `<video controls class="video" style="display:block;margin-top:12px;width:100%"><source src="${data.video}"></video>` : '';
 
   const availability = data.availability ? '<span class="ok">Available</span>' : '<span class="no">Rented</span>';
 
   return `
-    <div class="property-details">
-      <div class="meta">
-        <span>${data.type || ''}</span>
-        <span>${data.gender || ''}</span>
-        <span>${data.city || ''}</span>
-        <span class="availability">${availability}</span>
-      </div>
-      <p style="margin-top:16px">${data.description || ''}</p>
-      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-        <div><strong>Price:</strong> ${Number(data.price || 0).toLocaleString()} EGP</div>
-        <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
-        <div><strong>University:</strong> ${data.university || ''}</div>
-        <div><strong>Area:</strong> ${data.area || ''}</div>
-        <div><strong>Location:</strong> ${data.location || ''}</div>
-      </div>
-      ${imageGallery}
-      ${videoSection}
+    <div class="meta">
+      <span>${data.type || ''}</span>
+      <span>${data.gender || ''}</span>
+      <span>${data.city || ''}</span>
+      <span class="availability">${availability}</span>
     </div>
+    <p style="margin-top:8px">${data.description || ''}</p>
+    <div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      <div><strong>Price:</strong> ${Number(data.price || 0)} EGP</div>
+      <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
+      <div><strong>University:</strong> ${data.university || ''}</div>
+      <div><strong>Area:</strong> ${data.area || ''}</div>
+      <div><strong>Location:</strong> ${data.location || ''}</div>
+    </div>
+    ${imageGallery}
+    ${video}
   `;
 }
-
-// ------------------------------
-// Image Gallery Functions
-// ------------------------------
-let currentZoom = 1;
-const ZOOM_STEP = 0.2;
-const MAX_ZOOM = 3;
-const MIN_ZOOM = 0.5;
-
-function zoomIn() {
-  const mainImage = document.getElementById('mainImage');
-  if (!mainImage) return;
-  
-  currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
-  mainImage.style.transform = `scale(${currentZoom})`;
-}
-
-function zoomOut() {
-  const mainImage = document.getElementById('mainImage');
-  if (!mainImage) return;
-  
-  currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
-  mainImage.style.transform = `scale(${currentZoom})`;
-}
-
-function resetZoom() {
-  const mainImage = document.getElementById('mainImage');
-  if (!mainImage) return;
-  
-  currentZoom = 1;
-  mainImage.style.transform = 'scale(1)';
-}
-
-function changeMainImage(imageUrl, thumbElement) {
-  const mainImage = document.getElementById('mainImage');
-  if (!mainImage) return;
-  
-  // Update main image
-  mainImage.src = imageUrl;
-  
-  // Reset zoom
-  resetZoom();
-  
-  // Update active thumbnail
-  const allThumbs = document.querySelectorAll('.thumb');
-  allThumbs.forEach(thumb => thumb.classList.remove('active'));
-  thumbElement.classList.add('active');
-}
-
-function scrollThumbs(direction) {
-  const container = document.querySelector('.thumbs-container');
-  if (!container) return;
-  
-  const scrollAmount = 200;
-  if (direction === 'left') {
-    container.scrollLeft -= scrollAmount;
-  } else {
-    container.scrollLeft += scrollAmount;
-  }
-}
-
-// Make functions globally available
-window.zoomIn = zoomIn;
-window.zoomOut = zoomOut;
-window.resetZoom = resetZoom;
-window.changeMainImage = changeMainImage;
-window.scrollThumbs = scrollThumbs;
 
 
