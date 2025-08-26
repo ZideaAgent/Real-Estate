@@ -1,7 +1,7 @@
-// Admin.js - Simple working version
+// Admin.js - Secure version with enhanced security
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
-import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
 
 // Firebase config
 const firebaseConfig = {
@@ -19,12 +19,42 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Wait for DOM to load
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Admin page loaded, initializing...');
-  
-  // Get DOM elements
-  const loginForm = document.getElementById('loginForm');
+  // Security configuration
+  const SECURITY_CONFIG = {
+    maxLoginAttempts: 3,
+    lockoutDuration: 15 * 60 * 1000, // 15 minutes
+    sessionTimeout: 30 * 60 * 1000, // 30 minutes
+    requireReauth: true,
+    allowedDomains: ['localhost', '127.0.0.1'], // Restrict to local development
+    adminPath: '/admin-secure' // Hidden admin path
+  };
+
+// Security state
+let loginAttempts = 0;
+let lockoutUntil = 0;
+let lastActivity = Date.now();
+let sessionTimer = null;
+
+  // Security: Check domain access
+  function checkDomainAccess() {
+    const currentDomain = window.location.hostname;
+    if (!SECURITY_CONFIG.allowedDomains.includes(currentDomain)) {
+      alert('Access denied. This admin panel is not accessible from this domain.');
+      window.location.href = '/';
+      return false;
+    }
+    return true;
+  }
+
+  // Wait for DOM to load
+  document.addEventListener('DOMContentLoaded', function() {
+    // Security: Verify domain access first
+    if (!checkDomainAccess()) return;
+    
+    console.log('Admin page loaded, initializing...');
+    
+    // Get DOM elements
+    const loginForm = document.getElementById('loginForm');
   const emailEl = document.getElementById('email');
   const passEl = document.getElementById('password');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -45,7 +75,49 @@ document.addEventListener('DOMContentLoaded', function() {
   
   console.log('All DOM elements found, setting up...');
   
-  // Auth state listener
+  // Security: Prevent right-click and inspect
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('keydown', (e) => {
+    // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    if (e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+        (e.ctrlKey && e.key === 'u')) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // Security: Check if user is locked out
+  function isLockedOut() {
+    if (Date.now() < lockoutUntil) {
+      const remainingTime = Math.ceil((lockoutUntil - Date.now()) / 1000 / 60);
+      alert(`Account temporarily locked. Please try again in ${remainingTime} minutes.`);
+      return true;
+    }
+    return false;
+  }
+
+  // Security: Start session timer
+  function startSessionTimer() {
+    if (sessionTimer) clearTimeout(sessionTimer);
+    sessionTimer = setTimeout(() => {
+      alert('Session expired. Please log in again.');
+      signOut(auth);
+    }, SECURITY_CONFIG.sessionTimeout);
+  }
+
+  // Security: Update last activity
+  function updateActivity() {
+    lastActivity = Date.now();
+    startSessionTimer();
+  }
+
+  // Security: Monitor user activity
+  ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+    document.addEventListener(event, updateActivity, true);
+  });
+
+  // Auth state listener with security
   onAuthStateChanged(auth, (user) => {
     console.log('Auth state changed:', user ? 'logged in' : 'logged out');
     const loggedIn = !!user;
@@ -53,19 +125,60 @@ document.addEventListener('DOMContentLoaded', function() {
     sectionDashboard.style.display = loggedIn ? 'block' : 'none';
     logoutBtn.style.display = loggedIn ? 'inline-flex' : 'none';
     if (loggedIn) {
+      updateActivity();
       loadList();
+    } else {
+      if (sessionTimer) clearTimeout(sessionTimer);
     }
   });
   
-  // Login form
+  // Login form with security
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Security: Check lockout
+    if (isLockedOut()) return;
+    
+    // Security: Input validation
+    const email = emailEl.value.trim();
+    const password = passEl.value;
+    
+    if (!email || !password) {
+      alert('Please enter both email and password.');
+      return;
+    }
+    
+    if (!email.includes('@') || email.length < 5) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+    
     try {
-      await signInWithEmailAndPassword(auth, emailEl.value, passEl.value);
+      await signInWithEmailAndPassword(auth, email, password);
       console.log('Login successful');
+      
+      // Reset security state on successful login
+      loginAttempts = 0;
+      lockoutUntil = 0;
+      
     } catch (err) {
       console.error('Login failed:', err);
-      alert('Login failed: ' + err.message);
+      
+      // Security: Increment failed attempts
+      loginAttempts++;
+      
+      if (loginAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
+        lockoutUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
+        alert(`Too many failed attempts. Account locked for ${SECURITY_CONFIG.lockoutDuration / 60000} minutes.`);
+      } else {
+        const remainingAttempts = SECURITY_CONFIG.maxLoginAttempts - loginAttempts;
+        alert(`Login failed: ${err.message}\nRemaining attempts: ${remainingAttempts}`);
+      }
     }
   });
   
@@ -159,8 +272,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
   
   imageUpload?.addEventListener('change', async (e) => {
+    // Security: Check authentication
+    if (!auth.currentUser) {
+      alert('Authentication required. Please log in again.');
+      return;
+    }
+    
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+    
+    // Security: File validation
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File type not allowed: ${file.name}. Only JPEG, PNG, and WebP are allowed.`);
+        return;
+      }
+      
+      if (file.size > maxFileSize) {
+        alert(`File too large: ${file.name}. Maximum size is 5MB.`);
+        return;
+      }
+      
+      // Security: Check for malicious file names
+      if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+        alert(`Invalid file name: ${file.name}`);
+        return;
+      }
+    }
     
     // Show progress
     uploadProgress.style.display = 'block';
@@ -338,22 +479,77 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Save property
+  // Security: Input sanitization
+  function sanitizeInput(input) {
+    if (typeof input !== 'string') return input;
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .trim();
+  }
+
+  // Security: Validate property data
+  function validatePropertyData(data) {
+    const errors = [];
+    
+    if (!data.title || data.title.length < 3 || data.title.length > 100) {
+      errors.push('Title must be between 3 and 100 characters');
+    }
+    
+    if (!data.description || data.description.length < 10 || data.description.length > 1000) {
+      errors.push('Description must be between 10 and 1000 characters');
+    }
+    
+    if (!['apartment', 'room', 'studio'].includes(data.type)) {
+      errors.push('Invalid property type');
+    }
+    
+    if (!data.price || data.price < 0 || data.price > 100000) {
+      errors.push('Price must be between 0 and 100,000 EGP');
+    }
+    
+    if (!['male', 'female'].includes(data.gender)) {
+      errors.push('Invalid gender selection');
+    }
+    
+    if (data.roomsLeft < 0 || data.roomsLeft > 100) {
+      errors.push('Invalid number of rooms');
+    }
+    
+    return errors;
+  }
+
+  // Save property with security
   async function saveProperty() {
+    // Security: Validate user is authenticated
+    if (!auth.currentUser) {
+      alert('Authentication required. Please log in again.');
+      return;
+    }
+    
     const payload = {
-      title: document.getElementById('pTitle').value,
-      description: document.getElementById('pDesc').value,
+      title: sanitizeInput(document.getElementById('pTitle').value),
+      description: sanitizeInput(document.getElementById('pDesc').value),
       type: document.getElementById('pType').value,
       price: Number(document.getElementById('pPrice').value || 0),
       gender: document.getElementById('pGender').value,
-      university: document.getElementById('pUniversity').value,
-      faculty: document.getElementById('pFaculty').value,
-      area: document.getElementById('pArea').value,
-      location: document.getElementById('pLocation').value,
-      city: document.getElementById('pCity').value,
+      university: sanitizeInput(document.getElementById('pUniversity').value),
+      faculty: sanitizeInput(document.getElementById('pFaculty').value),
+      area: sanitizeInput(document.getElementById('pArea').value),
+      location: sanitizeInput(document.getElementById('pLocation').value),
+      city: sanitizeInput(document.getElementById('pCity').value),
       availability: document.getElementById('pAvailability').value === 'true',
       roomsLeft: Number(document.getElementById('pRoomsLeft').value || 0),
     };
+    
+    // Security: Validate data
+    const validationErrors = validatePropertyData(payload);
+    if (validationErrors.length > 0) {
+      alert('Validation errors:\n' + validationErrors.join('\n'));
+      return;
+    }
     
     try {
       // Parse image URLs
@@ -410,9 +606,22 @@ document.addEventListener('DOMContentLoaded', function() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   
-  // Delete property
+  // Delete property with security
   async function removeDoc(id) {
+    // Security: Check authentication
+    if (!auth.currentUser) {
+      alert('Authentication required. Please log in again.');
+      return;
+    }
+    
+    // Security: Validate ID
+    if (!id || typeof id !== 'string' || id.length < 1) {
+      alert('Invalid property ID');
+      return;
+    }
+    
     if (!confirm('Delete this property?')) return;
+    
     try {
       await deleteDoc(doc(db, 'properties', id));
       console.log('Property deleted');

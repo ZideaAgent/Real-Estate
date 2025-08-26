@@ -8,6 +8,63 @@
 */
 
 // ------------------------------
+// Security Layer - Main Site Protection
+// ------------------------------
+
+// Security: Prevent right-click and inspect
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('keydown', (e) => {
+  // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+  if (e.key === 'F12' || 
+      (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+      (e.ctrlKey && e.key === 'u')) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+// Security: Prevent iframe embedding
+if (window.self !== window.top) {
+  window.top.location = window.self.location;
+}
+
+// Security: Content protection
+document.addEventListener('DOMContentLoaded', () => {
+  // Disable text selection
+  document.body.style.userSelect = 'none';
+  document.body.style.webkitUserSelect = 'none';
+  document.body.style.mozUserSelect = 'none';
+  document.body.style.msUserSelect = 'none';
+  
+  // Add security headers
+  const meta = document.createElement('meta');
+  meta.httpEquiv = 'Content-Security-Policy';
+  meta.content = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com;";
+  document.head.appendChild(meta);
+});
+
+// Security: Rate limiting for search
+let searchCount = 0;
+let lastSearchTime = 0;
+const MAX_SEARCHES_PER_MINUTE = 30;
+
+function checkSearchRateLimit() {
+  const now = Date.now();
+  if (now - lastSearchTime > 60000) {
+    searchCount = 0;
+    lastSearchTime = now;
+  }
+  
+  if (searchCount >= MAX_SEARCHES_PER_MINUTE) {
+    alert('Too many searches. Please wait a moment before searching again.');
+    return false;
+  }
+  
+  searchCount++;
+  return true;
+}
+
+// ------------------------------
 // Minimal Router (hash-based)
 // ------------------------------
 const scrollToHash = () => {
@@ -255,8 +312,11 @@ function renderProperties(list) {
   });
 }
 
-// Apply filters
+// Apply filters with security
 function applyFilters() {
+  // Security: Rate limiting
+  if (!checkSearchRateLimit()) return;
+  
   const gender = document.getElementById('filterGender').value;
   const type = document.getElementById('filterType').value;
   const maxPrice = Number(document.getElementById('filterPrice').value || 0);
@@ -265,6 +325,12 @@ function applyFilters() {
   const area = document.getElementById('filterArea').value;
   const city = document.getElementById('filterCity').value;
   const search = document.getElementById('searchText').value.trim().toLowerCase();
+
+  // Security: Input validation
+  if (search && (search.length < 2 || search.length > 100)) {
+    alert('Search term must be between 2 and 100 characters');
+    return;
+  }
 
   const filtered = allProperties.filter(p => {
     if (gender && p.gender !== gender) return false;
