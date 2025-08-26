@@ -79,8 +79,18 @@
         <label class="field"><span>Rooms Left</span><input id="pRoomsLeft" type="number" min="0" step="1" /></label>
 
         <!-- Media URLs -->
-        <label class="field field--wide"><span>Image URLs (one per line)</span><textarea id="pImages" placeholder="https://drive.google.com/file/d/...&#10;https://drive.google.com/file/d/...&#10;https://example.com/image.jpg" rows="3"></textarea></label>
-        <label class="field field--wide"><span>Video URL</span><input id="pVideo" type="url" placeholder="https://drive.google.com/file/d/..." /></label>
+        <label class="field field--wide"><span>Image URLs (one per line)</span><textarea id="pImages" placeholder="assets/images/property-001-1.jpg&#10;assets/images/property-001-2.png&#10;https://github.com/ZideaAgent/Real-Estate/blob/main/assets/images/..." rows="3"></textarea></label>
+        <label class="field field--wide"><span>Video URL</span><input id="pVideo" type="url" placeholder="assets/videos/property-001-video.mp4" /></label>
+        
+        <!-- Asset Path Helper -->
+        <div class="field field--wide" style="background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
+          <strong>Asset Path Helper:</strong>
+          <p style="margin:8px 0;font-size:14px;color:var(--muted)">
+            • Images: <code>assets/images/filename.jpg</code><br>
+            • Videos: <code>assets/videos/filename.mp4</code><br>
+            • Live Site: <code>https://real-estate-bice-iota.vercel.app/assets/...</code>
+          </p>
+        </div>
 
         <div class="filters-actions">
           <button type="submit" class="btn primary">Save</button>

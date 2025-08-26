@@ -460,7 +460,13 @@ function convertGoogleDriveUrl(url) {
     }
   }
   
-  // Return original URL if it's not Google Drive
+  // Handle Vercel deployment asset paths
+  if (url.includes('real-estate-bice-iota.vercel.app')) {
+    // Vercel URLs work directly, no conversion needed
+    return url;
+  }
+  
+  // Return original URL if it's not Google Drive or Vercel
   return url;
 }
 

@@ -19,6 +19,54 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Helper function to validate and format asset paths
+function formatAssetPath(path, type = 'image') {
+  if (!path) return null;
+  
+  // If it's already a full Vercel URL, return as is
+  if (path.includes('real-estate-bice-iota.vercel.app')) {
+    return path;
+  }
+  
+  // If it's a relative path starting with assets/, make it absolute to Vercel
+  if (path.startsWith('assets/')) {
+    return `https://real-estate-bice-iota.vercel.app/${path}`;
+  }
+  
+  // If it's a full URL (not Vercel), return as is
+  if (path.startsWith('http')) {
+    return path;
+  }
+  
+  // Default: assume it's a relative path and format it to Vercel
+  return `https://real-estate-bice-iota.vercel.app/assets/${type}s/${path}`;
+}
+
+// Validate asset paths
+function validateAssetPaths(images, video) {
+  const errors = [];
+  
+  // Validate images
+  if (images && images.length > 0) {
+    images.forEach((img, index) => {
+      if (img.trim()) {
+        if (!img.includes('assets/') && !img.includes('real-estate-bice-iota.vercel.app') && !img.includes('http')) {
+          errors.push(`Image ${index + 1}: Should start with 'assets/images/' or be a full URL`);
+        }
+      }
+    });
+  }
+  
+  // Validate video
+  if (video && video.trim()) {
+    if (!video.includes('assets/') && !video.includes('real-estate-bice-iota.vercel.app') && !video.includes('http')) {
+      errors.push('Video: Should start with "assets/videos/" or be a full URL');
+    }
+  }
+  
+  return errors;
+}
+
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Admin page loaded, initializing...');
@@ -134,14 +182,24 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     try {
-      // Parse image URLs
+      // Parse and validate image URLs
       const imageUrls = document.getElementById('pImages').value.split('\n').filter(url => url.trim());
       if (imageUrls.length > 0) {
-        payload.images = imageUrls;
+        // Format image paths
+        payload.images = imageUrls.map(url => formatAssetPath(url.trim(), 'image'));
       }
       
-      if (document.getElementById('pVideo').value.trim()) {
-        payload.video = document.getElementById('pVideo').value.trim();
+      // Handle video URL
+      const videoUrl = document.getElementById('pVideo').value.trim();
+      if (videoUrl) {
+        payload.video = formatAssetPath(videoUrl, 'video');
+      }
+      
+      // Validate asset paths
+      const validationErrors = validateAssetPaths(payload.images, payload.video);
+      if (validationErrors.length > 0) {
+        alert('Asset path validation errors:\n\n' + validationErrors.join('\n'));
+        return;
       }
       
       const docId = document.getElementById('docId').value;
