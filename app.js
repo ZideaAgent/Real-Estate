@@ -355,8 +355,13 @@ async function loadProperties() {
         area: 'الحى الاول',
         location: 'عمارة 12، الدور الثاني، شقة 5',
         city: '6 أكتوبر',
-        images: [],
-        video: '',
+        images: [
+          'https://picsum.photos/seed/apartment1/800/600',
+          'https://picsum.photos/seed/apartment2/800/600',
+          'https://picsum.photos/seed/apartment3/800/600',
+          'https://picsum.photos/seed/apartment4/800/600'
+        ],
+        video: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
         availability: true,
         roomsLeft: 1
       },
@@ -370,7 +375,11 @@ async function loadProperties() {
         area: 'الحى الثاني',
         location: 'عمارة 26، الدور الاول، شقة 23',
         city: '6 أكتوبر',
-        images: [],
+        images: [
+          'https://picsum.photos/seed/room1/800/600',
+          'https://picsum.photos/seed/room2/800/600',
+          'https://picsum.photos/seed/room3/800/600'
+        ],
         video: '',
         availability: true,
         roomsLeft: 2
@@ -410,34 +419,142 @@ detailsOverlay?.addEventListener('click', (e) => {
 
 function renderDetailsHtml(data) {
   const images = Array.isArray(data.images) ? data.images : [];
-  const imageGallery = images.length ? `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
-      ${images.map(url => `<img src="${url}" alt="image" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/>`).join('')}
-    </div>
-  ` : '<p class="muted">No images</p>';
+  const hasImages = images.length > 0;
+  const hasVideo = data.video;
+  
+  // Create image gallery with zoom functionality
+  let imageGallery = '';
+  if (hasImages) {
+    imageGallery = `
+      <div class="details-gallery">
+        <div class="details-main">
+          <img id="mainImage" src="${images[0]}" alt="Main property image" class="main-image" />
+          <div class="zoom-controls">
+            <button class="btn zoom-btn" onclick="zoomIn()">🔍+</button>
+            <button class="btn zoom-btn" onclick="zoomOut()">🔍-</button>
+            <button class="btn zoom-btn" onclick="resetZoom()">↺</button>
+          </div>
+        </div>
+        ${images.length > 1 ? `
+          <div class="image-scroller">
+            <div class="thumbs-container">
+              ${images.map((url, index) => `
+                <img src="${url}" alt="Property image ${index + 1}" 
+                     class="thumb ${index === 0 ? 'active' : ''}" 
+                     onclick="changeMainImage('${url}', this)" />
+              `).join('')}
+            </div>
+            <button class="scroll-btn scroll-left" onclick="scrollThumbs('left')">‹</button>
+            <button class="scroll-btn scroll-right" onclick="scrollThumbs('right')">›</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
 
-  const video = data.video ? `<video controls class="video" style="display:block;margin-top:10px;width:100%"><source src="${data.video}"></video>` : '';
+  // Add video if available
+  let videoSection = '';
+  if (hasVideo) {
+    videoSection = `
+      <div class="video-section">
+        <h4>Property Video</h4>
+        <video controls class="property-video">
+          <source src="${data.video}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    `;
+  }
 
   const availability = data.availability ? '<span class="ok">Available</span>' : '<span class="no">Rented</span>';
 
   return `
-    <div class="meta">
-      <span>${data.type || ''}</span>
-      <span>${data.gender || ''}</span>
-      <span>${data.city || ''}</span>
-      <span class="availability">${availability}</span>
+    <div class="property-details">
+      <div class="meta">
+        <span>${data.type || ''}</span>
+        <span>${data.gender || ''}</span>
+        <span>${data.city || ''}</span>
+        <span class="availability">${availability}</span>
+      </div>
+      <p style="margin-top:16px">${data.description || ''}</p>
+      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div><strong>Price:</strong> ${Number(data.price || 0).toLocaleString()} EGP</div>
+        <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
+        <div><strong>University:</strong> ${data.university || ''}</div>
+        <div><strong>Area:</strong> ${data.area || ''}</div>
+        <div><strong>Location:</strong> ${data.location || ''}</div>
+      </div>
+      ${imageGallery}
+      ${videoSection}
     </div>
-    <p style="margin-top:8px">${data.description || ''}</p>
-    <div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
-      <div><strong>Price:</strong> ${Number(data.price || 0)} EGP</div>
-      <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
-      <div><strong>University:</strong> ${data.university || ''}</div>
-      <div><strong>Area:</strong> ${data.area || ''}</div>
-      <div><strong>Location:</strong> ${data.location || ''}</div>
-    </div>
-    ${imageGallery}
-    ${video}
   `;
 }
+
+// ------------------------------
+// Image Gallery Functions
+// ------------------------------
+let currentZoom = 1;
+const ZOOM_STEP = 0.2;
+const MAX_ZOOM = 3;
+const MIN_ZOOM = 0.5;
+
+function zoomIn() {
+  const mainImage = document.getElementById('mainImage');
+  if (!mainImage) return;
+  
+  currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
+  mainImage.style.transform = `scale(${currentZoom})`;
+}
+
+function zoomOut() {
+  const mainImage = document.getElementById('mainImage');
+  if (!mainImage) return;
+  
+  currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
+  mainImage.style.transform = `scale(${currentZoom})`;
+}
+
+function resetZoom() {
+  const mainImage = document.getElementById('mainImage');
+  if (!mainImage) return;
+  
+  currentZoom = 1;
+  mainImage.style.transform = 'scale(1)';
+}
+
+function changeMainImage(imageUrl, thumbElement) {
+  const mainImage = document.getElementById('mainImage');
+  if (!mainImage) return;
+  
+  // Update main image
+  mainImage.src = imageUrl;
+  
+  // Reset zoom
+  resetZoom();
+  
+  // Update active thumbnail
+  const allThumbs = document.querySelectorAll('.thumb');
+  allThumbs.forEach(thumb => thumb.classList.remove('active'));
+  thumbElement.classList.add('active');
+}
+
+function scrollThumbs(direction) {
+  const container = document.querySelector('.thumbs-container');
+  if (!container) return;
+  
+  const scrollAmount = 200;
+  if (direction === 'left') {
+    container.scrollLeft -= scrollAmount;
+  } else {
+    container.scrollLeft += scrollAmount;
+  }
+}
+
+// Make functions globally available
+window.zoomIn = zoomIn;
+window.zoomOut = zoomOut;
+window.resetZoom = resetZoom;
+window.changeMainImage = changeMainImage;
+window.scrollThumbs = scrollThumbs;
 
 
