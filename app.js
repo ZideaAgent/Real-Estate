@@ -212,6 +212,7 @@ function renderProperties(list) {
   const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSeTyPgOb5xf4XVivwCpgfFzZVz6id6iTywlqH9Ekkm1WOVOfw/viewform?usp=dialog'; // Your Google Form link
   list.forEach(item => {
     const node = cardTpl.content.cloneNode(true);
+    const card = node.querySelector('.card');
     const img = node.querySelector('.cover');
     const vid = node.querySelector('.video');
     const status = node.querySelector('.status');
@@ -246,6 +247,12 @@ function renderProperties(list) {
       : `<span class="no">Rented</span>`;
 
     rentBtn.addEventListener('click', () => window.open(formUrl, '_blank'));
+    // Open details on card click (except clicking Rent Now button)
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', (e) => {
+      if (e.target && e.target.closest && e.target.closest('.rent-btn')) return;
+      openDetails(item);
+    });
     grid.appendChild(node);
   });
 }
@@ -378,5 +385,59 @@ document.getElementById('year').textContent = new Date().getFullYear();
 scrollToHash();
 initLandingOverlay(); // Initialize landing overlay
 loadProperties();
+
+// ------------------------------
+// Property Details Overlay (User)
+// ------------------------------
+const detailsOverlay = document.getElementById('detailsOverlay');
+const detailsContent = document.getElementById('detailsContent');
+const closeDetails = document.getElementById('closeDetails');
+
+function openDetails(data) {
+  if (!detailsOverlay || !detailsContent) return;
+  detailsContent.innerHTML = renderDetailsHtml(data);
+  const titleEl = document.getElementById('detailsTitle');
+  if (titleEl) titleEl.textContent = data.title || '';
+  detailsOverlay.classList.add('visible');
+}
+function closeDetailsOverlay() {
+  detailsOverlay?.classList.remove('visible');
+}
+closeDetails?.addEventListener('click', closeDetailsOverlay);
+detailsOverlay?.addEventListener('click', (e) => {
+  if (e.target === detailsOverlay) closeDetailsOverlay();
+});
+
+function renderDetailsHtml(data) {
+  const images = Array.isArray(data.images) ? data.images : [];
+  const imageGallery = images.length ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+      ${images.map(url => `<img src="${url}" alt="image" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/>`).join('')}
+    </div>
+  ` : '<p class="muted">No images</p>';
+
+  const video = data.video ? `<video controls class="video" style="display:block;margin-top:10px;width:100%"><source src="${data.video}"></video>` : '';
+
+  const availability = data.availability ? '<span class="ok">Available</span>' : '<span class="no">Rented</span>';
+
+  return `
+    <div class="meta">
+      <span>${data.type || ''}</span>
+      <span>${data.gender || ''}</span>
+      <span>${data.city || ''}</span>
+      <span class="availability">${availability}</span>
+    </div>
+    <p style="margin-top:8px">${data.description || ''}</p>
+    <div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      <div><strong>Price:</strong> ${Number(data.price || 0)} EGP</div>
+      <div><strong>Rooms left:</strong> ${Number(data.roomsLeft || 0)}</div>
+      <div><strong>University:</strong> ${data.university || ''}</div>
+      <div><strong>Area:</strong> ${data.area || ''}</div>
+      <div><strong>Location:</strong> ${data.location || ''}</div>
+    </div>
+    ${imageGallery}
+    ${video}
+  `;
+}
 
 
