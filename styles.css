@@ -71,7 +71,7 @@ body{
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s ease}
 [data-theme="light"] .overlay{background:rgba(255,255,255,.6)}
 .overlay.visible{display:grid;opacity:1;visibility:visible}
-.overlay-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow);max-width:720px;width:min(92%,720px);animation:slideUp .35s ease}
+.overlay-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow);max-width:720px;width:min(92%,720px);animation:slideUp .35s ease;max-height:90vh;overflow-y:auto}
 .overlay-instructions{opacity:.9}
 @keyframes slideUp{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
 
