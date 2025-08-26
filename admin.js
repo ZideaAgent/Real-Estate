@@ -2,6 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
 import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js';
 
 // Firebase config
 const firebaseConfig = {
@@ -18,6 +19,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// After Firebase init
+const storage = getStorage(app);
+
+async function uploadFileAndGetUrl(file, pathPrefix) {
+  const safeName = `${Date.now()}-${file.name}`.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const refPath = `${pathPrefix}/${safeName}`;
+  const ref = storageRef(storage, refPath);
+  await uploadBytes(ref, file);
+  return await getDownloadURL(ref);
+}
+
+async function uploadMultipleAndGetUrls(fileList, pathPrefix) {
+  const files = Array.from(fileList || []);
+  const urls = [];
+  for (const f of files) {
+    const url = await uploadFileAndGetUrl(f, pathPrefix);
+    urls.push(url);
+  }
+  return urls;
+}
 
 // Helper function to validate and format asset paths
 function formatAssetPath(path, type = 'image') {
@@ -182,26 +204,36 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     try {
-      // Parse and validate image URLs
+      // Parse URLs from textareas/inputs
       const imageUrls = document.getElementById('pImages').value.split('\n').filter(url => url.trim());
       if (imageUrls.length > 0) {
-        // Format image paths
         payload.images = imageUrls.map(url => formatAssetPath(url.trim(), 'image'));
       }
-      
-      // Handle video URL
       const videoUrl = document.getElementById('pVideo').value.trim();
       if (videoUrl) {
         payload.video = formatAssetPath(videoUrl, 'video');
       }
-      
-      // Validate asset paths
-      const validationErrors = validateAssetPaths(payload.images, payload.video);
-      if (validationErrors.length > 0) {
-        alert('Asset path validation errors:\n\n' + validationErrors.join('\n'));
-        return;
+
+      // Handle uploads (if any)
+      const imageFiles = document.getElementById('pImageFiles').files;
+      if (imageFiles && imageFiles.length) {
+        const uploaded = await uploadMultipleAndGetUrls(imageFiles, 'properties/images');
+        payload.images = [...(payload.images || []), ...uploaded];
       }
-      
+      const videoFile = document.getElementById('pVideoFile').files?.[0];
+      if (videoFile) {
+        const uploadedVideoUrl = await uploadFileAndGetUrl(videoFile, 'properties/videos');
+        payload.video = uploadedVideoUrl;
+      }
+
+      // Validate asset paths (allow Firebase Storage URLs)
+      const allowlist = ['real-estate-bice-iota.vercel.app', 'firebasestorage.googleapis.com', 'storage.googleapis.com'];
+      const isAllowed = (u) => allowlist.some(host => (u || '').includes(host)) || (u || '').startsWith('http') || (u || '').startsWith('assets/');
+      const validationErrors = [];
+      (payload.images || []).forEach((u, i) => { if (!isAllowed(u)) validationErrors.push(`Image ${i+1}: invalid URL`); });
+      if (payload.video && !isAllowed(payload.video)) validationErrors.push('Video: invalid URL');
+      if (validationErrors.length) { alert('Asset path validation errors:\n\n' + validationErrors.join('\n')); return; }
+
       const docId = document.getElementById('docId').value;
       if (docId) {
         await updateDoc(doc(db, 'properties', docId), payload);
