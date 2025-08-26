@@ -84,18 +84,18 @@
         
         <!-- File Upload Section -->
         <div class="field field--wide" style="border: 2px dashed var(--border); padding: 20px; border-radius: 12px; text-align: center;">
-          <h4 style="margin: 0 0 16px 0;">📸 Upload Photos to GitHub</h4>
-          <p style="margin: 0 0 16px 0; color: var(--muted);">Upload photos directly to GitHub repository</p>
+          <h4 style="margin: 0 0 16px 0;">📸 Upload Media to GitHub</h4>
+          <p style="margin: 0 0 16px 0; color: var(--muted);">Upload photos and videos directly to your GitHub repository for Vercel deployment</p>
           
           <!-- GitHub Settings -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
             <label class="field">
               <span>GitHub Username</span>
-              <input id="githubUsername" type="text" placeholder="your-username" required />
+              <input id="githubUsername" type="text" placeholder="zideas-projects" required />
             </label>
             <label class="field">
               <span>Repository Name</span>
-              <input id="githubRepo" type="text" placeholder="your-repo" required />
+              <input id="githubRepo" type="text" placeholder="real-estate" required />
             </label>
           </div>
           
@@ -106,8 +106,8 @@
           
           <!-- File Upload -->
           <div style="margin: 16px 0;">
-            <input type="file" id="photoUpload" multiple accept="image/*" style="display: none;" />
-            <button type="button" id="selectPhotosBtn" class="btn">Select Photos</button>
+            <input type="file" id="photoUpload" multiple accept="image/*,video/*" style="display: none;" />
+            <button type="button" id="selectPhotosBtn" class="btn">Select Media Files</button>
             <span id="selectedFilesCount" style="margin-left: 8px; color: var(--muted);"></span>
           </div>
           

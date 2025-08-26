@@ -145,8 +145,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create unique filename with timestamp
         const timestamp = Date.now();
-        const fileExtension = file.name.split('.').pop();
-        const filename = `property-photos/${timestamp}-${i + 1}.${fileExtension}`;
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        const isVideo = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(fileExtension);
+        
+        // Use Vercel-friendly folder structure
+        const folder = isVideo ? 'assets/videos' : 'assets/images';
+        const filename = `${folder}/${timestamp}-${i + 1}.${fileExtension}`;
         
         // Convert file to base64
         const base64Content = await fileToBase64(file);
@@ -159,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            message: `Add property photo: ${file.name}`,
+            message: `Add ${isVideo ? 'video' : 'image'}: ${file.name}`,
             content: base64Content,
             branch: 'main'
           })
@@ -170,9 +174,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const result = await response.json();
-        // Get raw content URL (this will work with Vercel/GitHub Pages)
+        
+        // Generate URLs that work with Vercel deployment
+        // Option 1: Raw GitHub URLs (works immediately)
         const rawUrl = `https://raw.githubusercontent.com/${username}/${repo}/main/${filename}`;
-        uploadedUrls.push(rawUrl);
+        
+        // Option 2: Vercel deployment URLs (after next deployment)
+        const vercelUrl = `https://real-estate-zideas-projects.vercel.app/${filename}`;
+        
+        // Store both URLs, but prefer Vercel URL for production
+        const finalUrl = vercelUrl;
+        uploadedUrls.push(finalUrl);
         
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -184,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const allUrls = [...existingUrls, ...uploadedUrls];
       imagesTextarea.value = allUrls.join('\n');
       
-      uploadStatus.textContent = `Successfully uploaded ${uploadedUrls.length} photos!`;
+      uploadStatus.textContent = `Successfully uploaded ${uploadedUrls.length} files! URLs will work after Vercel redeploys.`;
       progressBar.style.background = 'var(--success)';
       
       // Clear selected files
@@ -198,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
         progressBar.style.width = '0%';
         progressBar.style.background = 'var(--primary)';
         uploadPhotosBtn.disabled = false;
-      }, 3000);
+      }, 5000);
       
     } catch (error) {
       console.error('Upload failed:', error);
