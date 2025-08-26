@@ -438,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const images = Array.isArray(data.images) ? data.images : [];
     const imageGallery = images.length ? `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
-        ${images.map(url => `<img src="${url}" alt="image" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"/>`).join('')}
+        ${images.map(url => `<img src="${url}" alt="image" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="openFullImage('${url}')"/>`).join('')}
       </div>
     ` : '<p class="muted">No images</p>';
 
@@ -467,4 +467,33 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   console.log('Admin setup complete!');
+});
+
+// Full Image Modal Functions
+function openFullImage(imageSrc) {
+  const modal = document.getElementById('fullImageModal');
+  const img = document.getElementById('fullImage');
+  if (modal && img) {
+    img.src = imageSrc;
+    modal.classList.add('visible');
+  }
+}
+
+function closeFullImage() {
+  const modal = document.getElementById('fullImageModal');
+  if (modal) {
+    modal.classList.remove('visible');
+  }
+}
+
+// Close full image modal when clicking outside the image
+document.addEventListener('DOMContentLoaded', () => {
+  const fullImageModal = document.getElementById('fullImageModal');
+  if (fullImageModal) {
+    fullImageModal.addEventListener('click', (e) => {
+      if (e.target === fullImageModal) {
+        closeFullImage();
+      }
+    });
+  }
 });

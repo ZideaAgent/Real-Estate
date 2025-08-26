@@ -68,7 +68,7 @@ body{
 .btn.subtle{background:transparent;border-color:var(--border)}
 
 /* Overlay */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s ease}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s ease;z-index:9999}
 [data-theme="light"] .overlay{background:rgba(255,255,255,.6)}
 .overlay.visible{display:grid;opacity:1;visibility:visible}
 .overlay-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow);max-width:720px;width:min(92%,720px);animation:slideUp .35s ease;max-height:90vh;overflow-y:auto}
@@ -104,11 +104,21 @@ body{
 /* Details modal gallery */
 .details-gallery{display:grid;gap:10px}
 .details-main{position:relative}
-.details-main img{width:100%;max-height:420px;object-fit:cover;border-radius:12px;border:1px solid var(--border);transition:transform .2s ease}
+.details-main img{width:100%;max-height:420px;object-fit:contain;border-radius:12px;border:1px solid var(--border);transition:transform .2s ease;background:var(--surface)}
 .details-main img.zoomed{transform:scale(1.06)}
+.details-main .image-controls{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:10}
+.details-main .image-controls .btn{background:rgba(0,0,0,0.7);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;transition:background 0.2s ease}
+.details-main .image-controls .btn:hover{background:rgba(0,0,0,0.9)}
 .thumbs{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
 .thumbs img{width:100px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);opacity:.8;cursor:pointer}
 .thumbs img.active{outline:2px solid var(--primary);opacity:1}
+
+/* Full image modal */
+.full-image-modal{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;place-items:center;z-index:10000;cursor:pointer}
+.full-image-modal.visible{display:grid}
+.full-image-modal img{max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px;cursor:default}
+.full-image-modal .close-btn{position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.2);color:white;border:none;padding:12px;border-radius:50%;cursor:pointer;font-size:18px;transition:background 0.2s ease}
+.full-image-modal .close-btn:hover{background:rgba(255,255,255,0.3)}
 
 /* About/Contact */
 .about,.contact{padding:34px 0}

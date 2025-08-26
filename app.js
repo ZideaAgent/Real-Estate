@@ -425,6 +425,11 @@ function openDetails(data) {
     document.getElementById('zoomIn')?.addEventListener('click', () => { zoomScale += 0.1; applyZoom(); });
     document.getElementById('zoomOut')?.addEventListener('click', () => { zoomScale -= 0.1; applyZoom(); });
     document.getElementById('zoomReset')?.addEventListener('click', () => { zoomScale = 1; applyZoom(); });
+    
+    // Full image functionality
+    document.getElementById('fullImageBtn')?.addEventListener('click', () => {
+      openFullImage(mainImg.src);
+    });
   } catch (e) {
     console.warn('Gallery wiring failed', e);
   }
@@ -445,10 +450,11 @@ function renderDetailsHtml(data) {
     <div class="details-gallery">
       <div class="details-main">
         <img id="detailsMainImage" src="${mainImageUrl}" alt="image" />
-        <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px">
+        <div class="image-controls">
           <button id="zoomOut" class="btn" aria-label="Zoom out">-</button>
           <button id="zoomIn" class="btn" aria-label="Zoom in">+</button>
           <button id="zoomReset" class="btn" aria-label="Reset zoom">⤾</button>
+          <button id="fullImageBtn" class="btn" aria-label="View full image">🔍</button>
         </div>
       </div>
       <div class="thumbs" style="overflow-x:auto;white-space:nowrap">
@@ -480,5 +486,34 @@ function renderDetailsHtml(data) {
     ${video}
   `;
 }
+
+// Full Image Modal Functions
+function openFullImage(imageSrc) {
+  const modal = document.getElementById('fullImageModal');
+  const img = document.getElementById('fullImage');
+  if (modal && img) {
+    img.src = imageSrc;
+    modal.classList.add('visible');
+  }
+}
+
+function closeFullImage() {
+  const modal = document.getElementById('fullImageModal');
+  if (modal) {
+    modal.classList.remove('visible');
+  }
+}
+
+// Close full image modal when clicking outside the image
+document.addEventListener('DOMContentLoaded', () => {
+  const fullImageModal = document.getElementById('fullImageModal');
+  if (fullImageModal) {
+    fullImageModal.addEventListener('click', (e) => {
+      if (e.target === fullImageModal) {
+        closeFullImage();
+      }
+    });
+  }
+});
 
 
